@@ -1,3 +1,5 @@
 icfp2012
 ========
-vagrant up!
+- install VirtualBox and Vagrant
+- vagrant up
+- commits to github should show up in the grove channel
