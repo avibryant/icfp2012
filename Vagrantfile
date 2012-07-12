@@ -2,8 +2,8 @@
 # vi: set ft=ruby :
 
 Vagrant::Config.run do |config|
-  config.vm.box = "debian_squeeze_32"
-  config.vm.box_url = "http://mathie-vagrant-boxes.s3.amazonaws.com/debian_squeeze_32.box"
+  config.vm.box = "debian_wheezy_64"
+  config.vm.box_url = "http://dl.dropbox.com/u/937870/VMs/wheezy64.box"
 
   # Enable provisioning with Puppet stand alone.  Puppet manifests
   # are contained in a directory path relative to this Vagrantfile.
@@ -25,6 +25,6 @@ Vagrant::Config.run do |config|
   #
   config.vm.provision :puppet do |puppet|
      puppet.manifests_path = "manifests"
-     puppet.manifest_file  = "debian_squeeze_32.pp"
+     puppet.manifest_file  = "simple.pp"
   end
 end

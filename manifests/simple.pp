@@ -1,8 +1,17 @@
+exec { "apt-update":
+  command     => "/usr/bin/apt-get update",
+  refreshonly => true;
+}
+
 group { "puppet":
   ensure => "present",
 }
 
-package { "openjdk-6-jre":
+package { "jruby":
+  ensure => "present"
+}
+
+package {"scala":
   ensure => "present"
 }
 
