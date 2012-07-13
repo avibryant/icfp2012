@@ -1,9 +1,11 @@
 table {
   border-spacing: 0px;
+  padding: 0px;
 }
 td {
   width: 68px;
   height: 68px;
+  padding: 0px;
   background-repeat: no-repeat;
 }
 
