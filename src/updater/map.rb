@@ -1,5 +1,6 @@
 class LambdaMap
-  mapString = <<-STR
+  def mapString
+    <<-STR
 ######
 #. *R#
 #  \\.#
@@ -7,6 +8,7 @@ class LambdaMap
 L  .\\#
 ######
 STR
+  end
 
   def printMap
     puts @map.reverse
@@ -23,9 +25,13 @@ STR
 end
 
 class Robot
-
+  
 end
 
 class Rock
 
 end
+
+foo = LambdaMap.new()
+foo.populateMap
+foo.printMap
