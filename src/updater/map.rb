@@ -19,6 +19,10 @@ class Cell
     @map[@x - 1, @y]
   end
 
+  def atTop
+    @map.height - 1 == @y
+  end
+
   def moveRocks
     self.class
   end
@@ -65,7 +69,9 @@ end
 
 class Empty < Cell
   def moveRocks
-    if Rock === above ||
+    if atTop
+      Empty
+    elsif Rock === above ||
       (Rock === above.left && above.left.movingDownRight) ||
       (Rock == above.right && above.right.movingDownLeft)
       Rock
@@ -90,11 +96,17 @@ class Parser
   }
 
   def self.parse(string)
-    string.split("\n").reverse.map do |r|
+    rows = string.split("\n").reverse.map do |r|
       classes = []
       r.each_char{|c| classes << CELL_CLASSES[c]}
       classes
     end
+    maxSize = rows.map {|classes| classes.size}.max
+    rows.map do |classes|
+      (maxSize - classes.size).times {classes << Empty}
+      classes
+    end
+
   end
 
   def self.render(cells)
@@ -136,7 +148,15 @@ class Map
   def move_rocks
     Map.new(@cells.map{|r| r.map{|c| c.moveRocks}})
   end
+
+  def height
+    @cells.size
+  end
+
+  def move_robot
+    
+  end
 end
 
 
-puts Map.parse("#####\n* * *\n\\   *").move_rocks.to_s
+puts Map.parse("#####\n* * *\n\\   *.").move_rocks.to_s
