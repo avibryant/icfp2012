@@ -30,6 +30,9 @@ class Cell
   def moveRobot(direction)
     self.class
   end
+
+  def updateMetadata(direction, metadata)
+  end
 end
 
 class Wall < Cell
@@ -58,6 +61,12 @@ class Lambda < Cell
       Robot
     else
       Lambda
+    end
+  end
+
+  def updateMetadata(direction, metadata)
+    if(Robot === cell_at(direction.opposite))
+      metadata["Lambdas"] = (metadata["Lambdas"] || 0).to_i + 1
     end
   end
 end
@@ -150,6 +159,9 @@ class Robot < Cell
     end
   end
 
+  def updateMetadata(direction, metadata)
+    metadata["Moves"] = (metadata["Moves"] || 0).to_i + 1
+  end
 end
 
 class Direction
@@ -286,6 +298,12 @@ class Map
   end
 
   def move_robot(direction)
-    Map.new(@cells.map{|r| r.map{|c| c.moveRobot(DIRECTION_CLASSES[direction])}}, @metadata)
+    metadata = @metadata.clone
+    cells = @cells.map{|r| r.map{|c|
+        dir = DIRECTION_CLASSES[direction]
+        c.updateMetadata(dir, metadata)
+        c.moveRobot(dir)
+    }}
+    Map.new(cells, metadata)
   end
 end
