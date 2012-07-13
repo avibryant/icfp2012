@@ -13,9 +13,9 @@ class Viz < WEBrick::HTTPServlet::AbstractServlet
       return
     end
 
-    root, map_name, moves = request.path.split("/")
+    root, @map_name, @moves = request.path.split("/")
 
-    map = read(map_name, moves)
+    map = read(@map_name, @moves)
 
     response.status = 200
     response['Content-Type'] = "text/html"
@@ -27,7 +27,7 @@ class Viz < WEBrick::HTTPServlet::AbstractServlet
     if(!moves || moves == "")
       MAPS_DIR + "/" + map_name + "/" + "base"
     else
-      MAPS_DIR + "/"  + map_name + "/" + moves + ".mv"
+      MAPS_DIR + "/"  + map_name + "/" + moves + ".txt"
     end
   end
 
@@ -89,7 +89,8 @@ class Viz < WEBrick::HTTPServlet::AbstractServlet
   end
 
   def footer
-    "</table><a href='javascript:window.location=window.location.href.slice(0,-1)'>back</a></body></html>"
+    "</table><a href='javascript:window.location=window.location.href.slice(0,-1)'>back</a>" +
+    " <a href='/maps/#{@map_name}/#{@moves}.txt'>text</a><p></body></html>"
   end
 end
 
@@ -97,6 +98,7 @@ if $0 == __FILE__ then
   server = WEBrick::HTTPServer.new(:Port => 8000)
   server.mount "/", Viz
   server.mount "/assets", WEBrick::HTTPServlet::FileHandler, ASSETS_DIR
+  server.mount "/maps", WEBrick::HTTPServlet::FileHandler, MAPS_DIR
   trap "INT" do server.shutdown end
   server.start
 end
