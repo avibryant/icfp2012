@@ -19,7 +19,7 @@ class Viz < WEBrick::HTTPServlet::AbstractServlet
 
 
   def file_name(map_name, moves)
-    if(moves == "")
+    if(!moves || moves == "")
       MAPS_DIR + "/" + map_name + "/" + "base"
     else
       MAPS_DIR + "/"  + map_name + "/" + moves + ".mv"
@@ -36,7 +36,7 @@ class Viz < WEBrick::HTTPServlet::AbstractServlet
 
       prev_moves = moves.chop
       ensure_file(map_name, prev_moves)
-      system("cd ../updater && ruby update.rb < #{file_name(map_name, prev_moves)} > #{file_name(map_name, moves)}")
+      system("cd ../updater && ruby update.rb #{moves[-1..-1]} < #{file_name(map_name, prev_moves)} > #{file_name(map_name, moves)}")
     end
   end
 

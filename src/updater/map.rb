@@ -250,5 +250,3 @@ class Map
 end
 
 
-puts Map.parse("#####\n* *R*\n\\   *.").move_robot('L').to_s
-
