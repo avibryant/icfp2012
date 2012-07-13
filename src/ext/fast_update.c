@@ -48,7 +48,7 @@ VALUE update(VALUE self, VALUE map) {
     rb_ary_store(output, r, Qnil);
   }
 
-  for(r = 0; r < num_rows; r++) {
+  for(r = num_rows - 1; r >= 0; r--) {
     row = rows[r];
     row_data = RSTRING_PTR(row);
     row_length = RSTRING_LEN(row);
@@ -62,6 +62,21 @@ VALUE update(VALUE self, VALUE map) {
           if(str_at(rows[r+1], c) == ' ') {
             set(map, output, r+1, c, '*');
             set(map, output, r,   c, ' ');
+          }
+
+          if(str_at(rows[r+1], c) == '*') {
+            if(c+1 < row_length &&
+                  str_at(rows[r],   c+1) == ' ' &&
+                  str_at(rows[r+1], c+1) == ' ') {
+              set(map, output, r+1, c+1, '*');
+              set(map, output, r,   c,   ' ');
+            } else
+              if(c-1 >= 0 &&
+                    str_at(rows[r],   c-1) == ' ' &&
+                    str_at(rows[r+1], c-1) == ' ') {
+                set(map, output, r+1, c-1, '*');
+                set(map, output, r,   c,   ' ');
+              }
           }
         }
         break;
