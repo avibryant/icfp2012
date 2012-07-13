@@ -27,9 +27,7 @@ class Viz < WEBrick::HTTPServlet::AbstractServlet
       html << "\n<tr>\n"
       row.each_char do |cell|
         css = css_class_for(cell)
-        html << "  <td class='#{css}'>"
-        html << cell
-        html << "</td>\n"
+        html << "  <td class='#{css}'></td>\n"
       end
       html << "</tr>\n"
     end
