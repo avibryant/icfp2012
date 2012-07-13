@@ -1,6 +1,7 @@
 require 'webrick'
 
 MAPS_DIR = File.expand_path("../../maps")
+ASSETS_DIR = File.expand_path("../../assets")
 
 puts "Loading maps from " + MAPS_DIR
 
@@ -58,17 +59,18 @@ class Viz < WEBrick::HTTPServlet::AbstractServlet
   end
 
   def header
-    "<table>"
+    "<html><head><link rel='stylesheet' type='text/css' href='/assets/base.css' /></head><body><table>"
   end
 
   def footer
-    "</table>"
+    "</table></body></html>"
   end
 end
 
 if $0 == __FILE__ then
   server = WEBrick::HTTPServer.new(:Port => 8000)
   server.mount "/", Viz
+  server.mount "/assets", WEBrick::HTTPServlet::FileHandler, ASSETS_DIR
   trap "INT" do server.shutdown end
   server.start
 end
