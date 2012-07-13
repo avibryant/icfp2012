@@ -19,11 +19,15 @@ class Cell
     @map[@x - 1, @y]
   end
 
-  def atTop
-    @map.height - 1 == @y
+  def cell_at(direction)
+    direction.cell_at(self)
   end
 
   def moveRocks
+    self.class
+  end
+
+  def moveRobot(direction)
     self.class
   end
 end
@@ -35,6 +39,15 @@ class Lift < Cell
 end
 
 class Earth < Cell
+  def moveRobot(direction)
+    if cell_at(direction.opposite) == nil
+      Earth
+    elsif Robot === cell_at(direction.opposite) 
+      Robot
+    else
+      Earth
+    end
+  end
 end
 
 class Lambda < Cell
@@ -65,11 +78,31 @@ class Rock < Cell
       Empty === left &&
       Empty === left.below
   end
+
+  def moveRobot(direction)
+    if Robot === cell_at(direction.opposite) && Empty === cell_at(direction)
+      Robot
+    else
+      Rock
+    end
+  end
 end
 
 class Empty < Cell
+  def moveRobot(direction)
+    if cell_at(direction.opposite) == nil
+      Empty
+    elsif Robot === cell_at(direction.opposite) 
+      Robot
+    elsif Rock === cell_at(direction.opposite) && Robot === cell_at(direction.opposite).cell_at(direction.opposite)
+      Rock
+    else
+      Empty
+    end
+  end
+
   def moveRocks
-    if atTop
+    if above == nil
       Empty
     elsif Rock === above ||
       (Rock === above.left && above.left.movingDownRight) ||
@@ -82,6 +115,56 @@ class Empty < Cell
 end
 
 class Robot < Cell
+  def moveRobot(direction)
+    if cell_at(direction) == nil
+      Robot
+    elsif Empty === cell_at(direction) || Earth === cell_at(direction)
+      Empty
+    elsif Rock === cell_at(direction) && Empty === cell_at(direction).cell_at(direction)
+      Empty
+    else
+      Robot
+    end
+  end
+end
+
+class Direction
+end
+
+class Up < Direction
+  def self.opposite
+    Down
+  end
+  def self.cell_at(cell)
+    cell.above
+  end
+end
+
+class Down < Direction
+  def self.opposite
+    Up
+  end
+  def self.cell_at(cell)
+    cell.below
+  end
+end
+
+class Left < Direction
+  def self.opposite
+    Right
+  end
+  def self.cell_at(cell)
+    cell.left
+  end
+end
+
+class Right < Direction
+  def self.opposite
+    Left
+  end
+  def self.cell_at(cell)
+    cell.right
+  end
 end
 
 class Parser
@@ -123,6 +206,13 @@ class Parser
 end
 
 class Map
+  DIRECTION_CLASSES = {
+    "U" => Up,
+    "L" => Left,
+    "D" => Down,
+    "R" => Right
+  }
+
   def self.parse(string)
     self.new(Parser.parse(string))
   end
@@ -138,6 +228,7 @@ class Map
   end
 
   def [](x,y)
+    return nil if @cells[y] == nil
     @cells[y][x]
   end
 
@@ -153,10 +244,10 @@ class Map
     @cells.size
   end
 
-  def move_robot
-    
+  def move_robot(direction)
+    Map.new(@cells.map{|r| r.map{|c| c.moveRobot(DIRECTION_CLASSES[direction])}})
   end
 end
 
 
-puts Map.parse("#####\n* * *\n\\   *.").move_rocks.to_s
+puts Map.parse("#####\n* *R*\n\\   *.").move_robot('L').to_s
