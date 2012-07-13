@@ -204,21 +204,34 @@ class Parser
   }
 
   def self.parse(string)
-    rows = string.split("\n").reverse.map do |r|
+    metadata = {}
+    lines = string.split("\n")
+    if i = lines.find_index("")
+      lines[i+1..-1].each do |md|
+        k,v = md.split
+        metadata[k] = v
+      end
+      lines = lines[0...i]
+    end
+
+    rows = lines.reverse.map do |r|
       classes = []
       r.each_char{|c| classes << CELL_CLASSES[c]}
       classes
     end
     maxSize = rows.map {|classes| classes.size}.max
-    rows.map do |classes|
+    cells = rows.map do |classes|
       (maxSize - classes.size).times {classes << Empty}
       classes
     end
 
+    Map.new(cells, metadata)
   end
 
-  def self.render(cells)
-    cells.reverse.map{|r| r.map{|c| render_cell(c)}.join}.join("\n")
+  def self.render(map)
+    map.cells.reverse.map{|r| r.map{|c| render_cell(c)}.join}.join("\n") + 
+    "\n\n" +
+    map.metadata.map{|k,v| k + " " + v.to_s}.join("\n")
   end
 
   def self.render_cell(cell)
@@ -238,11 +251,13 @@ class Map
     "R" => Right
   }
 
+  attr_reader :cells, :metadata
+
   def self.parse(string)
-    self.new(Parser.parse(string))
+    Parser.parse(string)
   end
 
-  def initialize(rows)
+  def initialize(rows, metadata = {})
     @width = rows[0].size
     @cells = (0...rows.size).map do |y|
       line = rows[y]
@@ -250,6 +265,7 @@ class Map
         line[x].new(self, x, y)
       end
     end
+    @metadata = metadata
   end
 
   def [](x,y)
@@ -258,11 +274,11 @@ class Map
   end
 
   def to_s
-    Parser.render(@cells)
+    Parser.render(self)
   end
 
   def move_rocks
-    Map.new(@cells.map{|r| r.map{|c| c.moveRocks}})
+    Map.new(@cells.map{|r| r.map{|c| c.moveRocks}}, @metadata)
   end
 
   def height
@@ -270,6 +286,6 @@ class Map
   end
 
   def move_robot(direction)
-    Map.new(@cells.map{|r| r.map{|c| c.moveRobot(DIRECTION_CLASSES[direction])}})
+    Map.new(@cells.map{|r| r.map{|c| c.moveRobot(DIRECTION_CLASSES[direction])}}, @metadata)
   end
 end

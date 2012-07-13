@@ -51,13 +51,18 @@ class Viz < WEBrick::HTTPServlet::AbstractServlet
 
   def render(map)
     html = header
-    map.each do |row|
+    until (row = map.shift) == "\n" || row.nil?
       html << "\n<tr>\n"
       row.each_char do |cell|
         css = css_class_for(cell)
         html << "  <td class='#{css}'></td>\n"
       end
       html << "</tr>\n"
+    end
+    html << "</table>"
+
+    map.each do |md|
+      html << "<p>#{md}</p>"
     end
     html << footer
     html
@@ -89,7 +94,7 @@ class Viz < WEBrick::HTTPServlet::AbstractServlet
   end
 
   def footer
-    footer = "</table>"
+    footer = ""
     if @moves && @moves != ""
       footer << "<a href='javascript:window.location=window.location.href.slice(0,-1)'>back</a>"
       footer << " <a href='/maps/#{@map_name}/#{@moves}.txt'>text</a>"
