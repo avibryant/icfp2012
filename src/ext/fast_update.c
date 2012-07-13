@@ -54,10 +54,7 @@ VALUE update(VALUE self, VALUE map) {
     row_length = RSTRING_LEN(row);
 
     for(c = 0; c < row_length; c++) {
-      switch(row_data[c]) {
-      case ' ':
-        break;
-      case '*':
+      if(row_data[c] == '*') {
         if(r + 1 < num_rows) {
           if(str_at(rows[r+1], c) == ' ') {
             set(map, output, r+1, c, '*');
@@ -77,11 +74,15 @@ VALUE update(VALUE self, VALUE map) {
                 set(map, output, r+1, c-1, '*');
                 set(map, output, r,   c,   ' ');
               }
+          } else if(str_at(rows[r+1], c) == '\\') {
+            if(c+1 < row_length &&
+                  str_at(rows[r],   c+1) == ' ' &&
+                  str_at(rows[r+1], c+1) == ' ') {
+              set(map, output, r+1, c+1, '*');
+              set(map, output, r,   c,   ' ');
+            }
           }
         }
-        break;
-      default:
-        return Qnil;
       }
     }
   }

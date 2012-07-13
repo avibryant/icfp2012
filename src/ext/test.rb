@@ -30,5 +30,11 @@ class TestFastUpdate < Test::Unit::TestCase
       [" *", " *"],
       ["  ", "**"]
   end
+
+  def test_rocks_slide_down_lambdas
+    assert_update \
+      ["* ", '\ '],
+      ["  ", '\*']
+  end
 end
 
