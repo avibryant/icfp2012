@@ -8,6 +8,11 @@ puts "Loading maps from " + MAPS_DIR
 class Viz < WEBrick::HTTPServlet::AbstractServlet
 
   def do_GET(request, response)
+    if request.path =~ /favicon.ico/
+      response.status = 404
+      return
+    end
+
     root, map_name, moves = request.path.split("/")
 
     map = read(map_name, moves)
@@ -27,7 +32,6 @@ class Viz < WEBrick::HTTPServlet::AbstractServlet
   end
 
   def ensure_file(map_name, moves)
-    p [map_name, moves]
     if(!File.exists?(file_name(map_name, moves)))
       
       if moves == ""
