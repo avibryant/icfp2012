@@ -1,3 +1,6 @@
+table {
+  border-spacing: 0px;
+}
 td {
   width: 68px;
   height: 68px;
