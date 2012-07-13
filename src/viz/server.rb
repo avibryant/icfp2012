@@ -18,7 +18,8 @@ class Viz < WEBrick::HTTPServlet::AbstractServlet
   end
 
   def read(map_name, moves)
-    File.readlines(MAPS_DIR + "/" + map_name + ".map")
+    file = "#{MAPS_DIR}/#{map_name}/map_#{moves}"
+    File.readlines(file)
   end
 
   def render(map)
