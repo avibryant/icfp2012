@@ -18,14 +18,31 @@ class Viz < WEBrick::HTTPServlet::AbstractServlet
   end
 
 
-  def read(map_name, moves)
-    file = "#{MAPS_DIR}/#{map_name}/map_#{moves}"
-    if(!File.exists?(file))
-      prev_moves = moves[0...-1]
-      read(map_name, prev_moves)
-      system("cd ../updater && ruby update.rb < #{MAPS_DIR}/#{map_name}/map_#{prev_moves} > #{MAPS_DIR}/#{map_name}/map_#{moves}")
+  def file_name(map_name, moves)
+    if(moves == "")
+      MAPS_DIR + "/" + map_name + "/" + "base"
+    else
+      MAPS_DIR + "/"  + map_name + "/" + moves + ".mv"
     end
-    File.readlines(file)
+  end
+
+  def ensure_file(map_name, moves)
+    p [map_name, moves]
+    if(!File.exists?(file_name(map_name, moves)))
+      
+      if moves == ""
+        raise "Could not find map " + map_name
+      end
+
+      prev_moves = moves.chop
+      ensure_file(map_name, prev_moves)
+      system("cd ../updater && ruby update.rb < #{file_name(map_name, prev_moves)} > #{file_name(map_name, moves)}")
+    end
+  end
+
+  def read(map_name, moves)
+    ensure_file(map_name, moves)
+    File.readlines(file_name(map_name, moves))
   end
 
   def render(map)
