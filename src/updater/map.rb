@@ -106,12 +106,24 @@ class Rock
     if s == ' '
       moveS(writeMap)
     elsif s == '*'
-      if e == ' ' and se == ' '
+      if canFallE?
         moveSE(writeMap)
-      elsif w == ' ' and sw == ' '
+      elsif canFallW?
         moveSW(writeMap)
       end
+    elsif s == '\\'
+      if canFallE?
+        moveSE(writeMap)
+      end
     end
+  end
+
+  def canFallE?
+    e == ' ' and se == ' '
+  end
+
+  def canFallW?
+    w == ' ' and sw == ' '
   end
 
   def moveS(writeMap)
