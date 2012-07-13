@@ -1,0 +1,41 @@
+table {
+  border-spacing: 0px;
+}
+td {
+  width: 68px;
+  height: 68px;
+  background-repeat: no-repeat;
+}
+
+td.wall {
+  background-image:url("/assets/wall.png");
+}
+
+td.earth {
+  background-image:url("/assets/earth.png");  
+}
+
+td.empty {
+  background-image:url("/assets/empty.png");  
+}
+
+
+td.lift-open {
+  background-image:url("/assets/lift-open.png");  
+}
+
+td.lift-closed {
+  background-image:url("/assets/lift-closed.png");  
+}
+
+td.robot {
+  background-image:url("/assets/robot.png");  
+}
+
+td.rock {
+  background-image:url("/assets/rock.png");  
+}
+
+td.lambda {
+  background-image:url("/assets/lambda.png");  
+}
