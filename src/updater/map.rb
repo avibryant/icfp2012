@@ -97,6 +97,10 @@ class Rock < Cell
   end
 end
 
+class DeadRobot < Cell
+
+end
+
 class Empty < Cell
   def moveRobot(direction)
     if cell_at(direction.opposite) == nil
@@ -135,6 +139,17 @@ class Robot < Cell
       Robot
     end
   end
+  def moveRocks
+    if above == nil || above.above == nil
+      Robot
+    elsif (Rock === above.above && above.above.movingDown) || (Rock === above.above.left && above.above.left.movingDownRight) ||
+      (Rock === above.above.right && above.above.right.movingDownLeft)
+      Earth
+    else
+      Robot
+    end
+  end
+
 end
 
 class Direction
@@ -184,7 +199,8 @@ class Parser
     "." => Earth,
     "\\" => Lambda,
     " " => Empty,
-    "R" => Robot
+    "R" => Robot,
+    "D" => DeadRobot
   }
 
   def self.parse(string)
