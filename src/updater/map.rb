@@ -257,10 +257,3 @@ class Map
     Map.new(@cells.map{|r| r.map{|c| c.moveRobot(DIRECTION_CLASSES[direction])}})
   end
 end
-
-
-puts Map.parse("#####\n* *R*\n\\   *.")
-        .move_robot('L')
-        .move_rocks
-        .to_s
-

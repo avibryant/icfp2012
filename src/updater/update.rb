@@ -1,4 +1,5 @@
 require 'map'
 
 map = Map.parse(STDIN.read)
-puts map.move_rocks.to_s
+move = ARGV[0]
+puts map.move_robot(move).move_rocks.to_s
