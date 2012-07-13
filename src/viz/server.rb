@@ -17,8 +17,14 @@ class Viz < WEBrick::HTTPServlet::AbstractServlet
     response.body = render(map)
   end
 
+
   def read(map_name, moves)
     file = "#{MAPS_DIR}/#{map_name}/map_#{moves}"
+    if(!File.exists?(file))
+      prev_moves = moves[0...-1]
+      read(map_name, prev_moves)
+      system("cd ../updater && ruby update.rb < #{MAPS_DIR}/#{map_name}/map_#{prev_moves} > #{MAPS_DIR}/#{map_name}/map_#{moves}")
+    end
     File.readlines(file)
   end
 
@@ -62,7 +68,7 @@ class Viz < WEBrick::HTTPServlet::AbstractServlet
   end
 
   def footer
-    "</table></body></html>"
+    "</table><a href='javascript:window.location=window.location.href.slice(0,-1)'>back</a></body></html>"
   end
 end
 
