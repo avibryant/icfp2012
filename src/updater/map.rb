@@ -1,147 +1,142 @@
-class LambdaMap
-  def mapString
-    <<-STR
-######
-#. *R#
-#  *.#
-#\\ * #
-L  .\\#
-######
-STR
+class Cell
+  def initialize(map, x, y)
+    @map, @x, @y = map, x, y
   end
 
-  def initialize
-    populateMap
-    @writeMap = @clone
+  def below
+    @map[@x, @y - 1]
   end
 
-  def clone
-    ClonedLambdaMap.new(@map)
+  def above
+    @map[@x, @y + 1]
   end
 
-  def width
-    @widthCache ||= @map.map {|row| row.length}.max
+  def right
+    @map[@x + 1, @y]
   end
 
-  def to_s
-    @map.reverse.inject(''){|str, row| str + "\n" + row}
+  def left
+    @map[@x - 1, @y]
   end
 
-  def set(x,y,char)
-    @map[y][x] = char
+  def moveRocks
+    self.class
+  end
+end
+
+class Wall < Cell
+end
+
+class Lift < Cell
+end
+
+class Earth < Cell
+end
+
+class Lambda < Cell
+end
+
+class Rock < Cell
+  def moveRocks  
+    if movingDown || movingDownRight || movingDownLeft
+      Empty
+    else
+      Rock
+    end
   end
 
-  def populateMap
-    @map = mapString.split("\n").reverse
+  def movingDown
+    Empty === below
   end
 
-  def rocks
-    ret = []
-    @map.each_with_index do |row, y|
-      row.chars.with_index(0).each do |c, x| 
-        ret.push Rock.new(self,x,y) if c == '*'
+  def movingDownRight
+    (Rock === below || Lambda === below) &&
+        Empty === right &&
+        Empty === right.below
+  end
+
+  def movingDownLeft
+    !movingDownRight && 
+      Rock === below &&
+      Empty === left &&
+      Empty === left.below
+  end
+end
+
+class Empty < Cell
+  def moveRocks
+    if Rock === above ||
+      (Rock === above.left && above.left.movingDownRight) ||
+      (Rock == above.right && above.right.movingDownLeft)
+      Rock
+    else
+      Empty
+    end
+  end
+end
+
+class Robot < Cell
+end
+
+class Parser
+  CELL_CLASSES = {
+    "#" => Wall,
+    "*" => Rock,
+    "L" => Lift,
+    "." => Earth,
+    "\\" => Lambda,
+    " " => Empty,
+    "R" => Robot
+  }
+
+  def self.parse(string)
+    string.split("\n").reverse.map do |r|
+      classes = []
+      r.each_char{|c| classes << CELL_CLASSES[c]}
+      classes
+    end
+  end
+
+  def self.render(cells)
+    cells.reverse.map{|r| r.map{|c| render_cell(c)}.join}.join("\n")
+  end
+
+  def self.render_cell(cell)
+    CELL_CLASSES.each do |k,v|
+      if v === cell
+        return k
       end
     end
-    ret
+  end
+end
+
+class Map
+  def self.parse(string)
+    self.new(Parser.parse(string))
+  end
+
+  def initialize(rows)
+    @width = rows[0].size
+    @cells = (0...rows.size).map do |y|
+      line = rows[y]
+      (0...line.size).map do |x|
+        line[x].new(self, x, y)
+      end
+    end
   end
 
   def [](x,y)
-    return '#' if @map[y] == nil
-    @map[y][x] || ((x < 0 or x >= @width) ? '#' : ' ')
+    @cells[y][x]
   end
 
-  def updateRobot(move)
-  end
-
-  def updateRocks
-    writeMap = clone
-    rocks.each {|rock| rock.update(writeMap)}
-    writeMap
-  end
-
-end
-
-class ClonedLambdaMap < LambdaMap
-  def initialize(map)
-    @map = map.map {|row| row.clone}
-  end
-end
-
-class Robot
-  
-end
-
-class Rock
-  def initialize (readMap, x, y)
-    @readMap = readMap
-    @x = x
-    @y = y
-  end
-  
   def to_s
-    "#{@x},#{@y}"
+    Parser.render(@cells)
   end
 
-  def s
-    @readMap[@x, @y - 1]
+  def move_rocks
+    Map.new(@cells.map{|r| r.map{|c| c.moveRocks}})
   end
-
-  def e
-    @readMap[@x + 1, @y]
-  end
-
-  def w
-    @readMap[@x - 1, @y]
-  end
-
-  def se
-    @readMap[@x + 1, @y - 1]
-  end
-
-  def sw
-    @readMap[@x - 1, @y - 1]
-  end
-
-  def update(writeMap)
-    if s == ' '
-      moveS(writeMap)
-    elsif s == '*'
-      if canFallE?
-        moveSE(writeMap)
-      elsif canFallW?
-        moveSW(writeMap)
-      end
-    elsif s == '\\'
-      if canFallE?
-        moveSE(writeMap)
-      end
-    end
-  end
-
-  def canFallE?
-    e == ' ' and se == ' '
-  end
-
-  def canFallW?
-    w == ' ' and sw == ' '
-  end
-
-  def moveS(writeMap)
-    writeMap.set(@x, @y, ' ')
-    writeMap.set(@x, @y - 1, '*')
-  end
-
-  def moveSE(writeMap)
-    writeMap.set(@x, @y, ' ')
-    writeMap.set(@x + 1, @y - 1, '*')
-  end
-
-  def moveSW(writeMap)
-    writeMap.set(@x, @y, ' ')
-    writeMap.set(@x - 1, @y - 1, '*')
-  end
-
 end
 
-map = LambdaMap.new()
-puts map.updateRocks
+
+puts Map.parse("#####\n* * *\n\\   *").move_rocks.to_s
