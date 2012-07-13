@@ -17,9 +17,32 @@ class Viz < WEBrick::HTTPServlet::AbstractServlet
     response.body = render(map)
   end
 
+
+  def file_name(map_name, moves)
+    if(moves == "")
+      MAPS_DIR + "/" + map_name + "/" + "base"
+    else
+      MAPS_DIR + "/"  + map_name + "/" + moves + ".mv"
+    end
+  end
+
+  def ensure_file(map_name, moves)
+    p [map_name, moves]
+    if(!File.exists?(file_name(map_name, moves)))
+      
+      if moves == ""
+        raise "Could not find map " + map_name
+      end
+
+      prev_moves = moves.chop
+      ensure_file(map_name, prev_moves)
+      system("cd ../updater && ruby update.rb < #{file_name(map_name, prev_moves)} > #{file_name(map_name, moves)}")
+    end
+  end
+
   def read(map_name, moves)
-    file = "#{MAPS_DIR}/#{map_name}/map_#{moves}"
-    File.readlines(file)
+    ensure_file(map_name, moves)
+    File.readlines(file_name(map_name, moves))
   end
 
   def render(map)
@@ -62,7 +85,7 @@ class Viz < WEBrick::HTTPServlet::AbstractServlet
   end
 
   def footer
-    "</table></body></html>"
+    "</table><a href='javascript:window.location=window.location.href.slice(0,-1)'>back</a></body></html>"
   end
 end
 

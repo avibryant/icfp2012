@@ -106,7 +106,7 @@ class Empty < Cell
       Empty
     elsif Rock === above ||
       (Rock === above.left && above.left.movingDownRight) ||
-      (Rock == above.right && above.right.movingDownLeft)
+      (Rock === above.right && above.right.movingDownLeft)
       Rock
     else
       Empty
@@ -251,3 +251,4 @@ end
 
 
 puts Map.parse("#####\n* *R*\n\\   *.").move_robot('L').to_s
+
