@@ -89,8 +89,12 @@ class Viz < WEBrick::HTTPServlet::AbstractServlet
   end
 
   def footer
-    "</table><a href='javascript:window.location=window.location.href.slice(0,-1)'>back</a>" +
-    " <a href='/maps/#{@map_name}/#{@moves}.txt'>text</a><p></body></html>"
+    footer = "</table>"
+    if @moves && @moves != ""
+      footer << "<a href='javascript:window.location=window.location.href.slice(0,-1)'>back</a>"
+      footer << " <a href='/maps/#{@map_name}/#{@moves}.txt'>text</a>"
+    end
+    footer << "</body></html>"
   end
 end
 
