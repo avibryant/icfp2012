@@ -51,6 +51,15 @@ class Earth < Cell
 end
 
 class Lambda < Cell
+  def moveRobot(direction)
+    if cell_at(direction.opposite) == nil
+      Lambda
+    elsif Robot === cell_at(direction.opposite) 
+      Robot
+    else
+      Lambda
+    end
+  end
 end
 
 class Rock < Cell
@@ -118,7 +127,7 @@ class Robot < Cell
   def moveRobot(direction)
     if cell_at(direction) == nil
       Robot
-    elsif Empty === cell_at(direction) || Earth === cell_at(direction)
+    elsif Empty === cell_at(direction) || Earth === cell_at(direction) || Lambda === cell_at(direction)
       Empty
     elsif Rock === cell_at(direction) && Empty === cell_at(direction).cell_at(direction)
       Empty
@@ -250,5 +259,8 @@ class Map
 end
 
 
-puts Map.parse("#####\n* *R*\n\\   *.").move_robot('L').to_s
+puts Map.parse("#####\n* *R*\n\\   *.")
+        .move_robot('L')
+        .move_rocks
+        .to_s
 
