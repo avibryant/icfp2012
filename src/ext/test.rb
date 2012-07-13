@@ -36,5 +36,11 @@ class TestFastUpdate < Test::Unit::TestCase
       ["* ", '\ '],
       ["  ", '\*']
   end
+
+  def test_opens_lift_when_no_more_lambdas
+    assert_update \
+      ["L "],
+      ["O "]
+  end
 end
 

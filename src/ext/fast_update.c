@@ -43,6 +43,8 @@ VALUE update(VALUE self, VALUE map) {
   VALUE row;
   char* row_data;
   int row_length, r, c;
+  int lambdas = 0;
+  int lift_r = -1, lift_c = -1;
 
   for(r = 0; r < num_rows; r++) {
     rb_ary_store(output, r, Qnil);
@@ -54,7 +56,8 @@ VALUE update(VALUE self, VALUE map) {
     row_length = RSTRING_LEN(row);
 
     for(c = 0; c < row_length; c++) {
-      if(row_data[c] == '*') {
+      switch(row_data[c]) {
+      case '*':
         if(r + 1 < num_rows) {
           if(str_at(rows[r+1], c) == ' ') {
             set(map, output, r+1, c, '*');
@@ -83,8 +86,20 @@ VALUE update(VALUE self, VALUE map) {
             }
           }
         }
+        break;
+      case 'L':
+        lift_r = r;
+        lift_c = c;
+        break;
+      case '\\':
+        lambdas++;
+        break;
       }
     }
+  }
+
+  if(lambdas == 0 && lift_r > -1) {
+    set(map, output, lift_r, lift_c, 'O');
   }
 
   fill_unchanged(map, output);
