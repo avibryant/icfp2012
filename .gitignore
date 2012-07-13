@@ -1,3 +1,5 @@
 .vagrant
 maps/*/*.txt
 *.mv
+*.bundle
+*.o
