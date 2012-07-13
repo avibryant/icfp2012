@@ -138,7 +138,7 @@ class Map
   end
 
   def [](x,y)
-    @cells[y][x]
+    @cells[y][x] rescue  Empty.new(self, x, y)
   end
 
   def to_s
@@ -157,6 +157,3 @@ class Map
     
   end
 end
-
-
-puts Map.parse("#####\n* * *\n\\   *.").move_rocks.to_s
