@@ -96,6 +96,17 @@ class FastMap
     @score
   end
 
+  def abort_score
+    return @abort_score if @abort_score
+    
+    if done?
+      @abort_score = score
+    else
+      @abort_score = move("A").score
+    end
+    @abort_score
+  end
+
   def moves
     @moves
   end

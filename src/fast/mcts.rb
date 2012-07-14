@@ -1,7 +1,7 @@
 require 'map'
 
 class MonteCarloTree
-  MOVES = ["L", "R", "U", "D", "W", "A"]
+  MOVES = ["L", "R", "U", "D", "W"]
 
   def initialize(root)
     @root = root
@@ -19,19 +19,23 @@ class MonteCarloTree
 
   def iterate(max_depth)
     map = pick_map(@root)
-#    puts map.moves
+    best = map
 
     depth = 0
     until map.done? || depth > max_depth
       map = map.move(pick_move)
+      if map.abort_score > best.abort_score
+        best = map
+      end
+      depth += 1
     end
 
-    unless map.done?
-      map = map.move("A")
-    end
-
-    if map.score > @best.score
-        @best = map
+    if best.abort_score > @best.score
+        if best.done?
+          @best = best
+        else
+          @best = best.move("A")
+        end
         dump
     end
 
@@ -39,12 +43,12 @@ class MonteCarloTree
     (0...moves.size).to_a.reverse.each do |i|
       parent_moves = moves[0..i]
       @counts[parent_moves] += 1
-      @scores[parent_moves] += map.score
-      @squared_scores[parent_moves] += (map.score * map.score)
+      @scores[parent_moves] += best.abort_score
+      @squared_scores[parent_moves] += (best.abort_score * best.abort_score)
     end
     @counts[""] += 1
-    @scores[""] += map.score
-    @squared_scores[""] += (map.score * map.score)
+    @scores[""] += best.abort_score
+    @squared_scores[""] += (best.abort_score * best.abort_score)
   end
 
   def pick_move
@@ -71,7 +75,7 @@ class MonteCarloTree
   end
 
   C = 0.5
-  D = 10000
+  D = 1000
 
   def best_child(map)
     scores = children(map.moves).shuffle.map do |moves|
