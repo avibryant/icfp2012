@@ -3,7 +3,8 @@ require 'map'
 DIRECTIONS = [Up, Right, Down, Left]
 DIRECTION_COMMANDS = Map::DIRECTION_CLASSES.invert
 
-map = Map.parse(STDIN.read)
+map = Map.parse(ARGF.read)
+map.score_cells!
 
 commands = []
 last_position = nil
@@ -33,12 +34,7 @@ def available_moves_from(cell)
   avail_moves = DIRECTIONS.dup
   avail_moves.delete(Down) if Rock === cell.above
   move_values = avail_moves.zip(avail_moves.map {|d| cell.cell_at(d).value })
-  move_values.reject! {|p| p[1] < 0 }
-  move_values
-end
-
-def random_move_from(move_list)
-  move_list[rand(move_list.size)][0]
+  move_values.reject {|p| p[1] < 0 }.sort_by {|p| -p[1] }
 end
 
 begin
@@ -51,25 +47,28 @@ while !map.is_done?
   robot = map[*position]
 
   move_values = available_moves_from(robot)
-
   raise Abort, "no valid moves" if move_values.empty?
 
-  sorted_moves = move_values.sort_by {|p| -p[1] }
-  best_move = (sorted_moves.shift)[0]
-  # don't move into a spot where we already know no further moves will be available
-  if available_moves_from(robot.cell_at(best_move)).empty?
-    best_move = random_move_from(sorted_moves)
+  best_move, best_score = move_values.shift
+  # if we're at a local maxima, recalculate cell scores
+  if (best_score <= robot.value)
+    map.score_cells!(5)
+    map.score_cells!(1)
+    map.score_cells!
+    move_values = available_moves_from(robot)
+    best_move, best_score = move_values[0]
   end
 
+  # don't move into a spot where we already know no further moves will be available
+  #if available_moves_from(robot.cell_at(best_move)).empty?
+  #  best_move = random_move_from(move_values)
+  #end
+
   move_trace = [best_move, position]
-  if last_2_moves.member?(move_trace) && move_counts[move_trace] > 2
-    best_move = random_move_from(sorted_moves)
-    move_trace = [best_move, position]
-  end
+  raise Abort, "loop detected" if last_2_moves.member?(move_trace) && move_counts[move_trace] > 2
 
   last_2_moves << move_trace
   move_counts[move_trace] += 1
-  raise Abort, "loop detected" if last_2_moves.member?(move_trace) && move_counts[move_trace] > 2
 
   command = DIRECTION_COMMANDS[best_move]
   map = map.command_robot(command).move_rocks
