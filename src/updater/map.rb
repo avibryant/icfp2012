@@ -33,6 +33,9 @@ class Cell
 
   def updateMetadata(direction, metadata)
   end
+
+  def updateMetadataRocks(metadata)
+  end
 end
 
 class Wall < Cell
@@ -183,6 +186,15 @@ class Robot < Cell
   def updateMetadata(direction, metadata)
     metadata["Moves"] = (metadata["Moves"] || 0).to_i + 1
   end
+
+  def updateMetadataRocks(metadata)
+    if above != nil && above.above != nil
+      if (Rock === above.above && above.above.movingDown) || (Rock === above.above.left && above.above.left.movingDownRight) ||
+        (Rock === above.above.right && above.above.right.movingDownLeft)
+        metadata["Dead"] = true
+      end
+    end
+  end
 end
 
 class Direction
@@ -315,7 +327,12 @@ class Map
   end
 
   def move_rocks
-    Map.new(@cells.map{|r| r.map{|c| c.moveRocks}}, @metadata)
+    metadata = @metadata.clone
+    cells = @cells.map{|r| r.map{|c|
+      c.updateMetadataRocks(metadata)
+      c.moveRocks
+    }}
+    Map.new(cells, metadata)
   end
 
   def height
