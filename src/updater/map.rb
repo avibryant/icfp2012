@@ -53,7 +53,7 @@ class Cell
     [above, right, below, left].compact
   end
 
-  def get_heatmap_value(current, distance, entropy)
+  def get_heatmap_value(current, distance)
     if current.nil?
       [-1, (Lambda::VALUE - distance**2)].max
     else
@@ -76,7 +76,7 @@ class Cell
 end
 
 class Wall < Cell
-  def get_heatmap_value(current, distance, entropy)
+  def get_heatmap_value(current, distance)
     -1
   end
 end
@@ -106,7 +106,7 @@ class Lift < Cell
     (metadata["LiftPositions"] ||= Set.new) << [x, y]
   end
 
-  def get_heatmap_value(current, distance, entropy)
+  def get_heatmap_value(current, distance)
     if @map.lambdas_gone && !underwater?
       VALUE
     else
@@ -155,7 +155,7 @@ class Lambda < Cell
     (metadata["LambdaPositions"] ||= Set.new) << [x, y]
   end
 
-  def get_heatmap_value(current, distance, entropy)
+  def get_heatmap_value(current, distance)
     underwater? ? -1 : VALUE
   end
 end
@@ -194,7 +194,7 @@ class Rock < Cell
     end
   end
 
-  def get_heatmap_value(current, distance, entropy)
+  def get_heatmap_value(current, distance)
     -1
   end
 end
@@ -411,7 +411,7 @@ class Map
     "HeatMap" => {}
   }.freeze
 
-  HIDDEN_METADATA = ["HeatMap"]
+  HIDDEN_METADATA = ["HeatMap", "LambdaPositions"]
 
   attr_reader :cells, :metadata, :width, :height
 
@@ -489,7 +489,7 @@ class Map
   # the extrema (for goal/obstacle tiles) or max(neighbor scores) - 1.
   # After any lambda is collected (handled in #move_robot, above) the heatmap is
   # reset so new goal distances can be calculated.
-  def score_cells!(entropy=0)
+  def score_cells!(entropy=nil)
     lambda_pos = @metadata["LambdaPositions"]
     if lambda_pos.empty?
       lambda_pos = @metadata["LiftPositions"]
@@ -501,7 +501,9 @@ class Map
       row.each do |cell|
         min_distance = lambda_pos.map {|x, y| (cell.x - x).abs + (cell.y - y).abs }.min
         current = heatmap[[cell.x, cell.y]]
-        heatmap[[cell.x, cell.y]] = cell.get_heatmap_value(current, min_distance, entropy)
+        value = cell.get_heatmap_value(current, min_distance)
+        value += (rand(entropy + 2) - entropy - 1) if entropy
+        heatmap[[cell.x, cell.y]] = value
       end
     end
   end
