@@ -23,7 +23,7 @@ class MonteCarloTree
 
     depth = 0
     until map.done? || depth > max_depth
-      map = map.move(pick_move(MOVES))
+      map = move(map)
       if map.abort_score > best.abort_score
         best = map
       end
@@ -51,16 +51,12 @@ class MonteCarloTree
     @squared_scores[""] += (best.abort_score * best.abort_score)
   end
 
-  def pick_move(moves)
-    if(rand < 0.1 && moves.include?("W"))
-      "W"
+  def move(map)
+    if rand < 0.05
+      map.move("W")
     else
-      nw = moves - ["W"]
-      if(nw.empty?)
-        "W"
-      else
-        nw[rand(nw.size)]
-      end
+      m = MOVES[rand(MOVES.size - 1)]
+      map.move(m)
     end
   end
 
@@ -77,25 +73,25 @@ class MonteCarloTree
   end
 
   def expand(map, moves)
-    move = pick_move(moves)
+    move = moves[rand(moves.size)]
     next_map = map.move(move)
     @maps[next_map.moves] = next_map
     next_map
   end
 
   C = 0.5
-  D = 1000
+  D = 1000.0
 
   def best_child(map)
     scores = children(map.moves).shuffle.map do |moves|
-      q = @scores[moves]
-      n = @counts[moves]
-      m = @counts[map.moves]
-      x = q.to_f / n.to_f
+      q = @scores[moves].to_f
+      n = @counts[moves].to_f
+      m = @counts[map.moves].to_f
+      x = q / n
       s = x +
-            (C * Math.sqrt(2 * Math.log(m) / n)) + 
+            (C * Math.sqrt(2.0 * Math.log(m) / n)) + 
             (Math.sqrt(
-              (@squared_scores[moves] - (n*x*x) + D) / n))
+              (@squared_scores[moves].to_f - (n*x*x) + D) / n))
       [s, moves, q, n, m]
     end
     scores.sort!{|a,b| a[0] <=> b[0]}
