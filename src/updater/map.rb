@@ -379,4 +379,8 @@ class Map
     end
     s
   end
+
+  def is_done?
+    @metadata["InLift"] || @metadata["Aborted"] || @metadata["Dead"]
+  end
 end
