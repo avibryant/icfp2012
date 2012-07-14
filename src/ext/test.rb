@@ -67,8 +67,10 @@ class TestFastUpdate < Test::Unit::TestCase
 end
 
 class TestUltraUpdate < Test::Unit::TestCase
-  def assert_update(from, to)
-    assert_equal to, FastUpdate.ultra_update(from, nil).first
+  def assert_update(from, to, kill=false)
+    map, state, killed = FastUpdate.ultra_update(from, nil)
+    assert_equal to, map
+    assert_equal kill, killed
   end
 
   def test_simple_rock_drop
@@ -107,6 +109,27 @@ class TestUltraUpdate < Test::Unit::TestCase
       ["O "]
   end
 
+  def test_falling_rocks_kill_robots
+    assert_update \
+      ["* ", "  ", "R "],
+      ["  ", "* ", "R "],
+      true
+  end
+
+ def test_left_rocks_kill_robots
+    assert_update \
+      [" *"," *", "R "],
+      ["  ", "* ", "R*"],
+      true
+  end
+
+ def test_right_rocks_kill_robots
+    assert_update \
+      ["* ", "* ", " R"],
+      ["  ", " *", "*R"],
+      true
+  end
+
   def test_uses_state_to_update_rocks
     map = ["* ", "  ", "  "]
 
@@ -136,6 +159,23 @@ class TestUltraUpdate < Test::Unit::TestCase
 
     assert_equal ["  ", "O ", "  "], out
   end
+
+  def test_uses_state_to_kill_robot
+    map = ["* ", "  ", "  ", "R "]
+
+    out, s, d = FastUpdate.ultra_update map, nil
+
+    assert s, "No state output"
+    assert_equal false, d
+
+    assert_equal ["  ", "* ", "  ", "R "], out
+
+    out, s, d = FastUpdate.ultra_update out, s
+
+    assert_equal ["  ", "  ", "* ", "R "], out
+    assert_equal true, d
+  end
+
 end
 
 class TestFastUpdateMove < Test::Unit::TestCase
