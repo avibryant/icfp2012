@@ -39,6 +39,23 @@ class Wall < Cell
 end
 
 class Lift < Cell
+  def moveRobot(direction)
+    if !@map.lambdas_gone
+      Lift
+    elsif cell_at(direction.opposite) == nil
+      Lift
+    elsif Robot === cell_at(direction.opposite)
+      Robot
+    else
+      Lift
+    end
+  end
+
+  def updateMetadata(direction, metadata)
+    if @map.lambdas_gone && (Robot === cell_at(direction.opposite))
+      metadata["InLift"] == true
+    end
+  end
 end
 
 class Earth < Cell
@@ -67,6 +84,8 @@ class Lambda < Cell
   def updateMetadata(direction, metadata)
     if(Robot === cell_at(direction.opposite))
       metadata["Lambdas"] = (metadata["Lambdas"] || 0).to_i + 1
+    else
+      metadata["LambdasLeft"] = (metadata["LambdasLeft"] || 0).to_i + 1
     end
   end
 end
@@ -143,6 +162,8 @@ class Robot < Cell
     elsif Empty === cell_at(direction) || Earth === cell_at(direction) || Lambda === cell_at(direction)
       Empty
     elsif Rock === cell_at(direction) && Empty === cell_at(direction).cell_at(direction)
+      Empty
+    elsif @map.lambdas_gone && Lift === cell_at(direction)
       Empty
     else
       Robot
@@ -280,6 +301,10 @@ class Map
     @metadata = metadata
   end
 
+  def lambdas_gone
+    @metadata["LambdasLeft"] == "0"
+  end
+
   def [](x,y)
     return nil if @cells[y] == nil
     @cells[y][x]
@@ -299,6 +324,7 @@ class Map
 
   def move_robot(direction)
     metadata = @metadata.clone
+    metadata['LambdasLeft'] = 0
     cells = @cells.map{|r| r.map{|c|
         dir = DIRECTION_CLASSES[direction]
         c.updateMetadata(dir, metadata)
@@ -311,6 +337,9 @@ class Map
     s = 0
     if(l = @metadata["Lambdas"])
       s += l.to_i * 25
+    end
+    if(@metadata["InLift"] == "true")
+      s *= 3
     end
     if(m = @metadata["Moves"])
       s -= m.to_i
