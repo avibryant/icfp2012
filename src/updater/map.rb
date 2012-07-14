@@ -110,7 +110,7 @@ class Earth < Cell
   def move_robot(direction)
     if cell_at(direction.opposite) == nil
       Earth
-    elsif Robot === cell_at(direction.opposite) 
+    elsif Robot === cell_at(direction.opposite)
       Robot
     else
       Earth
@@ -124,7 +124,7 @@ class Lambda < Cell
   def move_robot(direction)
     if cell_at(direction.opposite) == nil
       Lambda
-    elsif Robot === cell_at(direction.opposite) 
+    elsif Robot === cell_at(direction.opposite)
       Robot
     else
       Lambda
@@ -195,7 +195,7 @@ class Empty < Cell
   def move_robot(direction)
     if cell_at(direction.opposite) == nil
       Empty
-    elsif Robot === cell_at(direction.opposite) 
+    elsif Robot === cell_at(direction.opposite)
       Robot
     elsif (Right == direction || Left == direction) && Rock === cell_at(direction.opposite) && Robot === cell_at(direction.opposite).cell_at(direction.opposite)
       Rock
