@@ -53,7 +53,7 @@ class Lift < Cell
 
   def updateMetadata(direction, metadata)
     if @map.lambdas_gone && (Robot === cell_at(direction.opposite))
-      metadata["InLift"] == true
+      metadata["InLift"] = true
     end
   end
 end
