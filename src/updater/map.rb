@@ -120,7 +120,7 @@ class Rock < Cell
   end
 
   def move_robot(direction)
-    if Robot === cell_at(direction.opposite) && Empty === cell_at(direction)
+    if (Right == direction || Left == direction) && Robot === cell_at(direction.opposite) && Empty === cell_at(direction)
       Robot
     else
       Rock
@@ -138,7 +138,7 @@ class Empty < Cell
       Empty
     elsif Robot === cell_at(direction.opposite) 
       Robot
-    elsif Rock === cell_at(direction.opposite) && Robot === cell_at(direction.opposite).cell_at(direction.opposite)
+    elsif (Right == direction || Left == direction) && Rock === cell_at(direction.opposite) && Robot === cell_at(direction.opposite).cell_at(direction.opposite)
       Rock
     else
       Empty
@@ -164,7 +164,7 @@ class Robot < Cell
       Robot
     elsif Empty === cell_at(direction) || Earth === cell_at(direction) || Lambda === cell_at(direction)
       Empty
-    elsif Rock === cell_at(direction) && Empty === cell_at(direction).cell_at(direction)
+    elsif (Right == direction || Left == direction) && Rock === cell_at(direction) && Empty === cell_at(direction).cell_at(direction)
       Empty
     elsif @map.lambdas_gone && Lift === cell_at(direction)
       Empty
