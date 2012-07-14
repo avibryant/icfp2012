@@ -48,8 +48,13 @@ class Cell
   def update_initial_metadata(metadata)
   end
 
+  def obstruction_score
+    [above, right, below, left].select {|c| Wall === c || Rock === c }.size
+  end
+
   def set_value!(distance, value)
-    @value = value - distance
+    dist_value = value - distance ** 2
+    @value = dist_value - obstruction_score
   end
 end
 
@@ -86,7 +91,6 @@ class Lift < Cell
 
   def set_value!(distance, value)
     if @map.lambdas_gone
-      # Note: this is wrong, but may work anyway as an easy-to-calculate replacement
       @value = VALUE
     else
       super
@@ -107,7 +111,7 @@ class Earth < Cell
 end
 
 class Lambda < Cell
-  VALUE = 25
+  VALUE = 99
 
   def move_robot(direction)
     if cell_at(direction.opposite) == nil
@@ -129,6 +133,10 @@ class Lambda < Cell
 
   def update_initial_metadata(metadata)
     (metadata["LambdaPositions"] ||= Set.new) << [x, y]
+  end
+
+  def set_value!(distance, value)
+    @value = VALUE
   end
 end
 
@@ -167,7 +175,7 @@ class Rock < Cell
   end
 
   def set_value!(distance, value)
-    @value = value - (distance * 10)
+    @value = 0
   end
 end
 
@@ -331,7 +339,7 @@ class Parser
     CELL_CLASSES.each do |k,v|
       if v === cell
         s = "%02i" % cell.value
-        return "#{k} (#{s}) "
+        return "#{k}:#{s} "
       end
     end
   end
