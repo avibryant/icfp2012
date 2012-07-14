@@ -29,7 +29,9 @@ class Djikstra
   def shortest_path
     current_node = @destination.clone
     until @unvisited.empty?
-      cur_class = @map[current_node[0], current_node[1]].class
+      # TODO: ask tomorrow whats going on with indices in the map
+      cur_class = @map[current_node[1], @map.height - 1 - current_node[0]].class
+
       cur_score = @distance[current_node[0]][current_node[1]]
 
       if cur_class == Wall || cur_class == Rock || cur_class == Lift
@@ -41,9 +43,9 @@ class Djikstra
       [[-1,0], [1,0], [0,-1], [0,1]].each do |x,y|
         next_x = current_node[0] + x
         next_y = current_node[1] + y
-        if next_x >=0 && next_y >= 0 && @unvisited.include?([next_x, next_y])
-          next_class = @map[next_x, next_y].class
-          if next_class == Earth || next_class == Lambda || next_class == Empty || next_class == OpenLift
+        if next_x >=0 && next_y >= 0 && next_x <= @map.height - 1 && next_y <= @map.width - 1 && @unvisited.include?([next_x, next_y])
+          next_class = @map[next_y, @map.height - 1 - next_x].class
+          if next_class == Earth || next_class == Robot || next_class == Lambda || next_class == Empty || next_class == OpenLift
             score1 = cur_score + 1
             score2 = @distance[next_x][next_y]
             new_score = [score1, score2].min
@@ -60,7 +62,11 @@ end
 
 if __FILE__== $0
   map = Map.parse(STDIN.read)
-  d = Djikstra.new(map, [4,4])
+  puts map.to_s
+  # 0.upto(map.height-1).to_a.reverse.each {|x| p 0.upto(map.width - 1).map{|y| map[y,x].class }}
+  x = ARGV.shift.to_i
+  y = ARGV.shift.to_i
+  d = Djikstra.new(map, [x,y])
   paths = d.shortest_path
   paths.reverse.each do |path|
     p path
