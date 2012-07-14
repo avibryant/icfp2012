@@ -1,12 +1,10 @@
-require 'set'
 require '../ext/fast_update'
 
 class Cell
-  attr_accessor :value
-  attr_reader :x, :y
+  attr_reader :x, :y, :char
 
-  def initialize(map, x, y)
-    @map, @x, @y = map, x, y
+  def initialize(map, x, y, char)
+    @map, @x, @y, @char = map, x, y, char
   end
 
   def below
@@ -103,7 +101,7 @@ class Lift < Cell
   end
 
   def update_initial_metadata(metadata)
-    (metadata["LiftPositions"] ||= Set.new) << [x, y]
+    (metadata["LiftPositions"] ||= []) << [x, y]
   end
 
   def get_heatmap_value(current, distance)
@@ -152,7 +150,7 @@ class Lambda < Cell
   end
 
   def update_initial_metadata(metadata)
-    (metadata["LambdaPositions"] ||= Set.new) << [x, y]
+    (metadata["LambdaPositions"] ||= []) << [x, y]
   end
 
   def get_heatmap_value(current, distance)
@@ -291,6 +289,69 @@ class Robot < Cell
   end
 end
 
+class Trampoline < Cell
+  def target
+    target_name = @map.metadata["Trampolines"][char]
+    target_pos = @map.metadata["TargetPositions"][target_name]
+    @map[*target_pos]
+  end
+
+  def get_heatmap_value(current, distance)
+    dst = target
+    if Target === dst
+      dst.get_heatmap_value(current, distance, true)
+    else
+      super
+    end
+  end
+
+  # This is kind of awful; better ideas welcomed
+  def update_metadata(dir, metadata)
+    if Robot === cell_at(dir.opposite)
+      # Tile will be gone after this move, so make sure the target gets the robot
+      # and any other trampolines leading to it are removed
+      dst = target
+      #puts "Jumping from #{char}@(#{x},#{y}) -> #{dst.char}@(#{dst.x},#{dst.y})"
+
+      robot = @map[*@map.metadata["RobotPosition"]]
+
+      replace = [
+        [[dst.x, dst.y], [nil, Robot]],
+        [[robot.x, robot.y], [nil, Empty]]
+      ]
+
+      @map.find_trampolines_to(dst.char).each do |t|
+        pos = metadata["TrampolinePositions"][t]
+        replace << [pos, [nil, Empty]]
+      end
+
+      metadata["Replacements"] += replace
+    end
+  end
+
+  def update_initial_metadata(metadata)
+    (metadata["TrampolinePositions"] ||= {})[char] = [x, y]
+  end
+
+  def move_robot(direction)
+    if Robot === cell_at(direction.opposite)
+      Empty
+    else
+      Trampoline
+    end
+  end
+end
+
+class Target < Cell
+  def get_heatmap_value(current, distance, passthru=false)
+    passthru ? super(current, distance) : -1
+  end
+
+  def update_initial_metadata(metadata)
+    (metadata["TargetPositions"] ||= {})[char] = [x, y]
+  end
+end
+
 class Direction
 end
 
@@ -343,13 +404,22 @@ class Parser
     "D" => DeadRobot
   }
 
+  CELL_CHARACTERS = CELL_CLASSES.invert
+
+  ("A".."I").each {|c| CELL_CLASSES[c] = Trampoline }
+  ("1".."9").each {|i| CELL_CLASSES[i] = Target }
+
   def self.parse(string)
     metadata = {}
     lines = string.split("\n")
     if i = lines.find_index("")
       lines[i+1..-1].each do |md|
-        k,v = md.split
-        metadata[k] = v
+        k,v = md.split($;, 2)
+        if k == "Trampoline"
+          parse_trampoline(k, v, metadata)
+        else
+          metadata[k] = v
+        end
       end
       lines = lines[0...i]
     end
@@ -359,16 +429,22 @@ class Parser
     Map.new(cells, metadata)
   end
 
+  def self.parse_trampoline(k, v, metadata)
+    trampolines = (metadata["Trampolines"] ||= {})
+    src, dst = v.split(" targets ")
+    trampolines[src] = dst
+  end
+
   def self.parse_lines(lines)
     rows = lines.reverse.map do |r|
-      classes = []
-      r.each_char{|c| classes << CELL_CLASSES[c]}
-      classes
+      cols = []
+      r.each_char{|c| cols << [c, CELL_CLASSES[c]]}
+      cols
     end
-    maxSize = rows.map {|classes| classes.size}.max
-    rows.map do |classes|
-      (maxSize - classes.size).times {classes << Empty}
-      classes
+    maxSize = rows.map {|cols| cols.size}.max
+    rows.map do |cols|
+      (maxSize - cols.size).times {cols << [" ", Empty]}
+      cols
     end
   end
 
@@ -379,17 +455,15 @@ class Parser
       "#{k} #{v.inspect}"
     end
     metadata_str = metadata.join("\n")
+    #trampolines = metadata["Trampolines"]
+    #trampoline_str = trampolines.map {|k, v| "Trampoline #{k} targets #{v}" }
     cell_str + "\n\n" + metadata_str + "\nScore #{map.score}"
   end
 
   def self.render_cell(cell)
-    CELL_CLASSES.each do |k,v|
-      if v === cell
-        return k
+    cell.char
 #        s = "%02i" % cell.value
 #        return "#{k}:#{s} "
-      end
-    end
   end
 end
 
@@ -408,10 +482,14 @@ class Map
     "Flooding" => 0,
     "Waterproof" => 10,
     "TimeUnderWater" => 0,
-    "HeatMap" => {}
+    "HeatMap" => {},
+    "TrampolinePositions" => {},
+    "TargetPositions" => {}
   }.freeze
 
-  HIDDEN_METADATA = ["HeatMap", "LambdaPositions"]
+  HIDDEN_METADATA = %w[
+    HeatMap LambdaPositions TrampolinePositions TargetPositions
+  ]
 
   attr_reader :cells, :metadata, :width, :height
 
@@ -425,7 +503,9 @@ class Map
     @cells = (0...rows.size).map do |y|
       line = rows[y]
       (0...line.size).map do |x|
-        cell = line[x].new(self, x, y)
+        char, klass = line[x]
+        char ||= Parser::CELL_CHARACTERS[klass]
+        cell = klass.new(self, x, y, char)
         cell.update_initial_metadata(@metadata)
         cell
       end
@@ -435,6 +515,11 @@ class Map
 
   def lambdas_gone
     @metadata["LambdasLeft"].to_s == "0"
+  end
+
+  def find_trampolines_to(target)
+    trampolines = @metadata["Trampolines"]
+    trampolines.keys.select {|k| trampolines[k] == target }
   end
 
   def [](x,y)
@@ -459,7 +544,8 @@ class Map
       t1 = Time.new.to_f
       cells = @cells.map{|r| r.map{|c|
         c.update_metadata_rocks(metadata)
-        c.move_rocks
+        new_c = c.move_rocks
+        [Parser::CELL_CHARACTERS[new_c] || c.char, new_c]
       }}
       $time += (Time.new.to_f - t1)
     end
@@ -468,18 +554,29 @@ class Map
 
   def move_robot(direction)
     metadata = @metadata.clone
+
     previous_lambdas = metadata["LambdasLeft"]
     metadata["LambdasLeft"] = 0
-    metadata["LambdaPositions"] = Set.new
-    metadata["LiftPositions"] = Set.new
+    metadata["LambdaPositions"] = []
+    metadata["LiftPositions"] = []
+    metadata["Replacements"] = []
+
     cells = @cells.map{|r| r.map{|c|
         dir = DIRECTION_CLASSES[direction]
         c.update_metadata(dir, metadata)
-        c.move_robot(dir)
+        new_c = c.move_robot(dir)
+        [Parser::CELL_CHARACTERS[new_c] || c.char, new_c]
     }}
+
+    replace = metadata.delete("Replacements")
+    replace.each do |pos, data|
+      cells[pos[1]][pos[0]] = data
+    end
+
     if previous_lambdas != metadata["LambdasLeft"]
       metadata["HeatMap"] = {}
     end
+
     Map.new(cells, metadata)
   end
 
@@ -513,11 +610,11 @@ class Map
       metadata = @metadata.clone
       metadata["Aborted"] = true
       metadata["Moves"] = (metadata["Moves"] || 0).to_i + 1
-      Map.new(cells.map{|r| r.map{|c| c.class}}, metadata)
+      Map.new(cells.map{|r| r.map{|c| [c.char, c.class] }}, metadata)
     elsif command == "W"
       metadata = @metadata.clone
       metadata["Moves"] = (metadata["Moves"] || 0).to_i + 1
-      Map.new(cells.map{|r| r.map{|c| c.class}}, metadata)
+      Map.new(cells.map{|r| r.map{|c| [c.char, c.class] }}, metadata)
     else
       move_robot(command)
     end
