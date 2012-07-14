@@ -269,3 +269,35 @@ class TestFastUpdateMove < Test::Unit::TestCase
   end
 end
 
+class TestFastUpdateUltraMove < Test::Unit::TestCase
+  LEFT = 0
+  RIGHT = 1
+  UP = 2
+  DOWN = 3
+
+  def test_left_moves_rock
+    map = [" *R"]
+
+    map, s = FastUpdate.ultra_update map, nil
+
+    assert_equal [0,1], s[0][0]
+
+    map, lambdas, np, s = FastUpdate.ultra_move map, 0, 2, LEFT, s
+
+    assert_equal ["*R "], map
+    assert_equal [0,0], s[0][0]
+  end
+
+  def test_right_moves_rock
+    map = ["R* "]
+
+    map, s = FastUpdate.ultra_update map, nil
+
+    assert_equal [0,1], s[0][0]
+
+    map, lambdas, np, s = FastUpdate.ultra_move map, 0, 0, RIGHT, s
+
+    assert_equal [" R*"], map
+    assert_equal [0,2], s[0][0]
+  end
+end
