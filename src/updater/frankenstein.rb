@@ -1,5 +1,5 @@
-require 'map'
 require '../fast/mcts'
+require 'map'
 
 DIRECTIONS = [Up, Right, Down, Left]
 DIRECTION_COMMANDS = Map::DIRECTION_CLASSES.invert
@@ -7,7 +7,7 @@ DIRECTION_COMMANDS = Map::DIRECTION_CLASSES.invert
 MAX_ENTROPY = 10
 
 map = Map.parse(ARGF.read)
-map.score_cells!
+map.alt_score_cells!
 
 class Abort < StandardError; end
 
@@ -113,16 +113,16 @@ def get_commands_from_tree(original_map, commands)
     mcts_map = mcts_map.move(a)
   end
   tree = MonteCarloTree.new(mcts_map)
-  max_depth = 10
-  max_time = 10
+  max_depth = 25
+  max_time = 20
   while tree.time_elapsed < max_time
     tree.iterate(max_depth)
   end
   tree.best.moves.chars.to_a
 end
 
-commands = get_commands_from_tree(map, [])
-3.times {|n|
+commands = [] #get_commands_from_tree(map, [])
+8.times {|n|
  map, commands = greedy_loop(map, commands) 
 }
 
