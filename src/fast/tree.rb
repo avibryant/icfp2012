@@ -3,12 +3,13 @@ require 'map'
 class Tree
   DIRECTIONS = ["U", "D", "L", "R", "W", "A"]
 
-  attr_reader :leaves, :leaves_considered
+  attr_reader :best, :queue, :maps
 
   def initialize(map)
-    @leaves = [map]
-    @leaves_considered = 0
+    @queue = [map]
+    @maps = 1
     @start_time = Time.new.to_f
+    @best = nil
   end
 
   def time_elapsed
@@ -16,32 +17,28 @@ class Tree
   end
 
   def iterate
-    new_leaves = []
-    @leaves.each do |leaf|
-      if leaf.done?
-        new_leaves << leaf
-      else
-        DIRECTIONS.each do |dir|
-          new_leaves << leaf.move(dir)
-          @leaves_considered += 1
-       end
-      end
+    new_queue = []
+    @queue.each do |map|
+      DIRECTIONS.each do |dir|
+        @maps += 1
+        new_map = map.move(dir)
+        if new_map.done?
+          if !@best || new_map.score > @best.score
+            @best = new_map
+          end
+        else 
+          new_queue << new_map
+        end
+     end
     end
-    @leaves = new_leaves
-  end
-
-  def top(n)
-    sorted_leaves = @leaves.shuffle.sort{|a,b| a.score <=> b.score}
-    best_done = sorted_leaves.reverse.find{|l| l.done?}
-    sorted_leaves.reject!{|l| l.done? && l != best_done}
-    if(sorted_leaves.size> n)
-      sorted_leaves = sorted_leaves[-1 * n .. -1]
-    end
-    sorted_leaves
+    @queue = new_queue
   end
 
   def prune(n)
-    @leaves = top(n)
+    sorted_queue = @queue.shuffle.sort{|a,b| a.score <=> b.score}
+    if(sorted_queue.size> n)
+      @queue = sorted_queue[-1 * n .. -1]
+    end
   end
 end
 
@@ -49,17 +46,17 @@ map = FastMap.new(STDIN.read.split("\n"))
 tree = Tree.new(map)
 iterations = ARGV.shift.to_i
 prune = ARGV.shift.to_i
-iterate_time = 0
+
 iterations.times do |i|
   t1 = Time.new.to_f
   tree.iterate
-  iterate_time += (Time.new.to_f - t1)
   tree.prune(prune)
   puts "Iteration #{i+1}"
-  best = tree.top(1)[0]
-  puts "Best score: #{best.score}"
-  puts "Best moves: #{best.moves}"
-  puts "Leaves: #{tree.leaves.size}"
-  puts "Leaves considered: #{tree.leaves_considered}"
+  if tree.best
+    puts "Best score: #{tree.best.score}"
+    puts "Best moves: #{tree.best.moves}"
+  end
+  puts "Queue size: #{tree.queue.size}"
+  puts "Maps considered: #{tree.maps}"
   puts "Total time elapsed: #{tree.time_elapsed}"
 end
