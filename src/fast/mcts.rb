@@ -1,16 +1,16 @@
 require 'map'
 
 class MonteCarloTree
-  MOVES = ["L", "R", "U", "D", "A"]
+  MOVES = ["L", "R", "U", "D", "W", "A"]
 
   def initialize(root)
     @root = root
     @maps = {"" => root}
     @scores = Hash.new(0)
+    @squared_scores = Hash.new(0)
     @counts = Hash.new(0)
     @start_time = Time.new.to_f
     @best = root
-    @completed = {}
   end
 
   def time_elapsed
@@ -19,6 +19,7 @@ class MonteCarloTree
 
   def iterate(max_depth)
     map = pick_map(@root)
+#    puts map.moves
 
     depth = 0
     until map.done? || depth > max_depth
@@ -34,19 +35,16 @@ class MonteCarloTree
         dump
     end
 
-    @completed[map.moves] = true
-
     moves = map.moves
     (0...moves.size).to_a.reverse.each do |i|
       parent_moves = moves[0..i]
-      if(children(parent_moves).all?{|m| @completed[m]})
-        @completed[parent_moves] = true
-      end
       @counts[parent_moves] += 1
       @scores[parent_moves] += map.score
+      @squared_scores[parent_moves] += (map.score * map.score)
     end
     @counts[""] += 1
-    @scores[""] ++ map.score
+    @scores[""] += map.score
+    @squared_scores[""] += (map.score * map.score)
   end
 
   def pick_move
@@ -72,24 +70,24 @@ class MonteCarloTree
     next_map
   end
 
-  C = 1.0 / Math.sqrt(2.0)
+  C = 0.5
+  D = 10000
 
   def best_child(map)
-    scores = incomplete_children(map.moves).map do |moves|
+    scores = children(map.moves).shuffle.map do |moves|
       q = @scores[moves]
       n = @counts[moves]
       m = @counts[map.moves]
-      s = (q.to_f / n.to_f) +
-            (C * Math.sqrt(2 * Math.log(m) / n))
-      [s, moves]
+      x = q.to_f / n.to_f
+      s = x +
+            (C * Math.sqrt(2 * Math.log(m) / n)) + 
+            (Math.sqrt(
+              (@squared_scores[moves] - (n*x*x) + D) / n))
+      [s, moves, q, n, m]
     end
     scores.sort!{|a,b| a[0] <=> b[0]}
     best_moves = scores[-1][1]
     @maps[best_moves]
-  end
-
-  def incomplete_children(moves)
-    children(moves).reject{|m| @completed[m]}
   end
 
   def children(moves)
