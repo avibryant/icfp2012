@@ -1,4 +1,5 @@
 require 'set'
+require '../ext/fast_update'
 
 class Cell
   attr_accessor :value
@@ -94,6 +95,9 @@ class Lift < Cell
   end
 end
 
+class OpenLift < Lift
+end
+
 class Earth < Cell
   def move_robot(direction)
     if cell_at(direction.opposite) == nil
@@ -163,7 +167,7 @@ class Rock < Cell
   end
 
   def move_robot(direction)
-    if Robot === cell_at(direction.opposite) && Empty === cell_at(direction)
+    if (Right == direction || Left == direction) && Robot === cell_at(direction.opposite) && Empty === cell_at(direction)
       Robot
     else
       Rock
@@ -185,7 +189,7 @@ class Empty < Cell
       Empty
     elsif Robot === cell_at(direction.opposite) 
       Robot
-    elsif Rock === cell_at(direction.opposite) && Robot === cell_at(direction.opposite).cell_at(direction.opposite)
+    elsif (Right == direction || Left == direction) && Rock === cell_at(direction.opposite) && Robot === cell_at(direction.opposite).cell_at(direction.opposite)
       Rock
     else
       Empty
@@ -211,7 +215,7 @@ class Robot < Cell
       Robot
     elsif Empty === cell_at(direction) || Earth === cell_at(direction) || Lambda === cell_at(direction)
       Empty
-    elsif Rock === cell_at(direction) && Empty === cell_at(direction).cell_at(direction)
+    elsif (Right == direction || Left == direction) && Rock === cell_at(direction) && Empty === cell_at(direction).cell_at(direction)
       Empty
     elsif @map.lambdas_gone && Lift === cell_at(direction)
       Empty
@@ -293,6 +297,7 @@ class Parser
     "#" => Wall,
     "*" => Rock,
     "L" => Lift,
+    "O" => OpenLift,
     "." => Earth,
     "\\" => Lambda,
     " " => Empty,
@@ -311,24 +316,28 @@ class Parser
       lines = lines[0...i]
     end
 
+    cells = parse_lines(lines)
+
+    Map.new(cells, metadata)
+  end
+
+  def self.parse_lines(lines)
     rows = lines.reverse.map do |r|
       classes = []
       r.each_char{|c| classes << CELL_CLASSES[c]}
       classes
     end
     maxSize = rows.map {|classes| classes.size}.max
-    cells = rows.map do |classes|
+    rows.map do |classes|
       (maxSize - classes.size).times {classes << Empty}
       classes
     end
-
-    Map.new(cells, metadata)
   end
 
   def self.render(map)
     map.cells.reverse.map{|r| r.map{|c| render_cell(c)}.join}.join("\n") +
     "\n\n" +
-    map.metadata.map{|k,v| "#{k} #{v.inspect}" }.join("\n")
+    map.metadata.map{|k,v| "#{k} #{v.inspect}" }.join("\n") + "\nScore #{map.score}"
   end
 
   def self.render_cell(cell)
@@ -340,6 +349,8 @@ class Parser
     end
   end
 end
+
+$time = 0
 
 class Map
   DIRECTION_CLASSES = {
@@ -357,7 +368,7 @@ class Map
 
   def initialize(rows, metadata = {})
     @width = rows[0].size
-    @metadata = metadata
+    @metadata = metadata.clone
     @cells = (0...rows.size).map do |y|
       line = rows[y]
       (0...line.size).map do |x|
@@ -384,10 +395,20 @@ class Map
 
   def move_rocks
     metadata = @metadata.clone
-    cells = @cells.map{|r| r.map{|c|
+    if ENV["FAST"]
+      old_lines = @cells.reverse.map{|r| r.map{|c| Parser.render_cell(c)}.join}
+      t1 = Time.new.to_f
+      lines = FastUpdate.update(old_lines)
+      $time += (Time.new.to_f - t1)
+      cells = Parser.parse_lines(lines)
+    else
+      t1 = Time.new.to_f
+     cells = @cells.map{|r| r.map{|c|
       c.update_metadata_rocks(metadata)
       c.move_rocks
-    }}
+      }}
+      $time += (Time.new.to_f - t1)
+    end
     Map.new(cells, metadata)
   end
 

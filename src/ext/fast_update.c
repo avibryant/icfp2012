@@ -304,8 +304,121 @@ VALUE ultra_update(VALUE self, VALUE map, VALUE state) {
             rb_ary_new3(3, new_rock_list, new_lamb_list, lift_pos));
 }
 
+VALUE move(VALUE self, VALUE map, VALUE row_n, VALUE col_n, VALUE dir) {
+  map = rb_Array(map);
+
+  int num_rows = RARRAY_LEN(map);
+  VALUE output = rb_ary_new2(num_rows);
+
+  VALUE* rows = RARRAY_PTR(map);
+  VALUE row;
+  char* row_data;
+  int row_length, r, c, d;
+  int lambdas = 0;
+  int lift_r = -1, lift_c = -1;
+
+  for(r = 0; r < num_rows; r++) {
+    rb_ary_store(output, r, Qnil);
+  }
+
+  r = FIX2INT(row_n);
+  c = FIX2INT(col_n);
+  d = FIX2INT(dir);
+
+  row = rows[r];
+  row_data = RSTRING_PTR(row);
+  row_length = RSTRING_LEN(row);
+
+  switch(d) {
+  case 0: // left
+    if(c == 0) break;
+    switch(row_data[c-1]) {
+    case 'O':
+      lambdas = -2;
+    case '\\':
+      lambdas++;
+    case ' ':
+    case '.':
+      set(map, output, r, c-1, 'R');
+      set(map, output, r, c,   ' ');
+      c--;
+      break;
+    case '*':
+      if(c > 1 && row_data[c-2] == ' ') {
+        set(map, output, r, c-2, '*');
+        set(map, output, r, c-1, 'R');
+        set(map, output, r, c,   ' ');
+        c--;
+        break;
+      }
+    }
+    break;
+  case 1: // right
+    if(c == row_length-1) break;
+    switch(row_data[c+1]) {
+    case 'O':
+      lambdas = -2;
+    case '\\':
+      lambdas++;
+    case ' ':
+    case '.':
+      set(map, output, r, c+1, 'R');
+      set(map, output, r, c,   ' ');
+      c++;
+      break;
+    case '*':
+      if(c < row_length-2 && row_data[c+2] == ' ') {
+        set(map, output, r, c+2, '*');
+        set(map, output, r, c+1, 'R');
+        set(map, output, r, c,   ' ');
+        c++;
+        break;
+      }
+    }
+    break;
+  case 2: // up
+    if(r == 0) break;
+    switch(str_at(rows[r-1],c)) {
+    case 'O':
+      lambdas = -2;
+    case '\\':
+      lambdas++;
+    case ' ':
+    case '.':
+      set(map, output, r-1, c, 'R');
+      set(map, output, r,   c, ' ');
+      r--;
+      break;
+    }
+    break;
+  case 3: // down
+    if(r >= num_rows-1) break;
+    switch(str_at(rows[r+1],c)) {
+    case 'O':
+      lambdas = -2;
+    case '\\':
+      lambdas++;
+    case ' ':
+    case '.':
+      set(map, output, r+1, c, 'R');
+      set(map, output, r,   c, ' ');
+      r++;
+      break;
+    }
+    break;
+  default:
+    break;
+  }
+
+  fill_unchanged(map, output);
+
+  return rb_ary_new3(3, output, INT2FIX(lambdas),
+                     rb_ary_new3(2, INT2FIX(r), INT2FIX(c)));
+}
+
 void Init_fast_update() {
   VALUE mod = rb_define_module("FastUpdate");
   rb_define_singleton_method(mod, "update", update, 1);
   rb_define_singleton_method(mod, "ultra_update", ultra_update, 2);
+  rb_define_singleton_method(mod, "move", move, 4);
 }
