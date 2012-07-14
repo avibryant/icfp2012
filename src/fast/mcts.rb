@@ -113,6 +113,10 @@ class MonteCarloTree
     puts "Tree size: #{@maps.size}"
     puts "Time elapsed: #{time_elapsed}"
   end
+
+  def best
+    @best
+  end
 end
 
 map = FastMap.new(STDIN.read.split("\n"))

@@ -131,7 +131,7 @@ class Earth < Cell
 end
 
 class Lambda < Cell
-  VALUE = 25
+  VALUE = 2500
 
   def move_robot(direction)
     if cell_at(direction.opposite) == nil
@@ -195,7 +195,12 @@ class Rock < Cell
   end
 
   def get_heatmap_value(current, distance)
-    -1
+    if current.nil?
+      [-1, (Lambda::VALUE - distance**2)].max
+    else
+      best_neighbor = neighbors.collect {|c| c.value }.max
+      (best_neighbor || 0) - 10
+    end
   end
 end
 
@@ -508,6 +513,26 @@ class Map
     end
   end
 
+  def alt_score_cells!(candidates=@cells.flatten)
+    lambda_pos = @metadata["LambdaPositions"]
+    if lambda_pos.empty?
+      lambda_pos = @metadata["LiftPositions"]
+    end
+
+    heatmap = (@metadata["HeatMap"] ||= {})
+    new_candidates = []
+    candidates.each do |cell|
+      min_distance = 100
+      current = heatmap[[cell.x, cell.y]]
+      next_heat = cell.get_heatmap_value(current, min_distance)
+      if heatmap[[cell.x, cell.y]] != next_heat
+        new_candidates |= cell.neighbors
+        heatmap[[cell.x, cell.y]] = next_heat
+      end
+    end
+    alt_score_cells!(new_candidates.uniq) if new_candidates.size > 0
+  end
+
   def command_robot(command)
     if command == "A"
       metadata = @metadata.clone
@@ -537,7 +562,7 @@ class Map
   def score
     s = 0
     if(l = @metadata["Lambdas"])
-      s += l.to_i * Lambda::VALUE
+      s += l.to_i * 25
     end
     if(@metadata["InLift"])
       s *= 3
