@@ -103,7 +103,11 @@ class Lift < Cell
   end
 
   def get_heatmap_value(current, distance, entropy)
-    @map.lambdas_gone ? VALUE : -1
+    if @map.lambdas_gone && !underwater?
+      VALUE
+    else
+      -1
+    end
   end
 end
 
@@ -148,7 +152,7 @@ class Lambda < Cell
   end
 
   def get_heatmap_value(current, distance, entropy)
-    @value = VALUE
+    underwater? ? -1 : VALUE
   end
 end
 
