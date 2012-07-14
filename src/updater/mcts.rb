@@ -27,7 +27,7 @@ class MonteCarloTree
     best = map
 
     depth = 0
-    until map.done? || depth > max_depth
+    until map.is_done? || depth > max_depth
       map = move(map)
       if map.abort_score > best.abort_score
         best = map
@@ -36,7 +36,7 @@ class MonteCarloTree
     end
 
     if best.abort_score > @best.score
-        if best.done?
+        if best.is_done?
           @best = best
         else
           @best = best.move("A")
@@ -62,17 +62,11 @@ class MonteCarloTree
   end
 
   def move(map)
-    if rand < 0.5
-      map.move(MOVES[rand(MOVES.size)])
-    else
-      nt = map.nearest_target
-      dir = map.direction_to(nt)
-      map.move(dir)
-    end
+    map.move(MOVES[rand(MOVES.size)])
   end
 
   def pick_map(map)
-    until(map.done?)
+    until(map.is_done?)
       untried = untried_moves(map)
       if(untried.empty?)
         map = best_child(map)
@@ -125,21 +119,10 @@ class MonteCarloTree
     puts "Best moves: #{@best.moves}"
     puts "Tree size: #{@maps.size}"
     puts "Time elapsed: #{time_elapsed}"
-    if @recent_counts.size > 5
-      puts "Top moves:"
-      @recent_counts.keys.sort.sort{|a,b| @recent_counts[a] <=> @recent_counts[b]}[-5..-1].each do |moves|
-        puts "  #{@recent_counts[moves]} #{moves}"
-      end
-    end
-    @recent_counts = Hash.new(0)
-  end
-
-  def best
-    @best
   end
 end
 
-map = FastMap.new(STDIN.read.split("\n"))
+map = Map.parse(STDIN.read)
 tree = MonteCarloTree.new(map)
 max_depth = ARGV.shift.to_i
 max_time = ARGV.shift.to_i
