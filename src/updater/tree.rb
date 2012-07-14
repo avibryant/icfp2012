@@ -11,9 +11,13 @@ class Tree
 
   def iterate
     new_leaves = {}
-    @leaves.select{ |moves, leaf| moves[-1 .. -1] != "A" && moves[-2 .. -1] != "WW"}.each do |moves, leaf|
-      DIRECTIONS.each do |dir|
-        new_leaves[moves + dir] = leaf.command_robot(dir).move_rocks
+    @leaves.each do |moves, leaf|
+      if leaf.is_done?
+        new_leaves[moves] = leaf
+      else
+        DIRECTIONS.each do |dir|
+          new_leaves[moves + dir] = leaf.command_robot(dir).move_rocks
+       end
       end
     end
     @leaves = new_leaves
