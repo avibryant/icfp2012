@@ -63,7 +63,11 @@ class Cell
   end
 
   def value
-    @map.metadata["HeatMap"][[x, y]]
+    if hm = @map.metadata["HeatMap"]
+      hm[[x, y]]
+    else
+      0
+    end
   end
 end
 
@@ -355,8 +359,9 @@ class Parser
   def self.render_cell(cell)
     CELL_CLASSES.each do |k,v|
       if v === cell
-        s = "%02i" % cell.value
-        return "#{k}:#{s} "
+        return k
+#        s = "%02i" % cell.value
+#        return "#{k}:#{s} "
       end
     end
   end
@@ -478,6 +483,17 @@ class Map
       Map.new(cells.map{|r| r.map{|c| c.class}}, metadata)
     else
       move_robot(command)
+    end
+  end
+
+  def robot_value
+    self.score_cells!
+    x, y = @metadata["RobotPosition"]
+    cell = self[x,y]
+    if cell
+      cell.value
+    else
+      -1
     end
   end
 

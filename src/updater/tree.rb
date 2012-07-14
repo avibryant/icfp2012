@@ -1,5 +1,6 @@
 require 'map'
 
+USE_GREEDY = ENV["GREEDY"]
 class Tree
   DIRECTIONS = ["U", "D", "L", "R", "W", "A"]
 
@@ -40,7 +41,11 @@ class Tree
     scores = {}
     t1 = Time.new.to_f
     @leaves.each do |moves, leaf|
-      scores[moves] = leaf.score
+      score = leaf.score
+      if USE_GREEDY
+        score += leaf.robot_value
+      end
+      scores[moves] = score
     end
     t2 = Time.new.to_f
 
@@ -54,7 +59,7 @@ class Tree
 
     @score_time += (t2 - t1)
     @sort_time += (t3 - t2)
-    sorted_moves.map{|m| [m, scores[m]]}
+    sorted_moves.map{|m| [m, @leaves[m].score]}
   end
 
   def prune(n)
@@ -101,6 +106,7 @@ iterations.times do |i|
   puts "Best score: #{score}"
   puts "Best moves: #{moves}"
   puts "Best lambdas: #{tree.leaves[moves].lambdas}"
+  puts "Best robot value: #{tree.leaves[moves].robot_value}"
   puts "Move robot time: #{tree.move_robot_time}"
   puts "Move rocks time: #{tree.move_rocks_time}"
   puts "Extra iterate time: #{iterate_time - tree.move_robot_time - tree.move_rocks_time}"
