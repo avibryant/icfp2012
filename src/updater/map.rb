@@ -306,4 +306,15 @@ class Map
     }}
     Map.new(cells, metadata)
   end
+
+  def score
+    s = 0
+    if(l = @metadata["Lambdas"])
+      s += l.to_i * 25
+    end
+    if(m = @metadata["Moves"])
+      s -= m.to_i
+    end
+    s
+  end
 end
