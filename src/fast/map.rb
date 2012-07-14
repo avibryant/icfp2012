@@ -3,11 +3,12 @@ require '../ext/fast_update'
 USE_ULTRA = ENV["ULTRA"]
 
 class FastMap  
-  def initialize(lines, state = nil, moves = "", lambdas = 0, robot = nil, lift = false, dead = false, aborted = false)
+  def initialize(lines, state = nil, moves = "", lambdas = 0, total_lambdas = nil, robot = nil, lift = false, dead = false, aborted = false)
     @lines = lines
     @state = state
     @moves = moves
     @lambdas = lambdas
+    @total_lambdas = total_lambdas || count("\\")
     @robot = robot || find("R")
     @lift = lift
     @dead = dead
@@ -57,7 +58,7 @@ class FastMap
       lines2, dead = FastUpdate.update(lines)
       state2 = nil
     end
-    self.class.new(lines2, state2, @moves + dir, @lambdas + lambdas, robot, lift, dead, aborted)
+    self.class.new(lines2, state2, @moves + dir, @lambdas + lambdas, @total_lambdas, robot, lift, dead, aborted)
   end
 
   def find(char)
@@ -68,6 +69,18 @@ class FastMap
         end
       end
     end
+  end
+
+  def count(char)
+    count = 0
+    @lines.each do |line|
+      line.each_char do |c|
+        if(c == char)
+          count += 1
+        end
+      end
+    end
+    count
   end
 
   def to_s
@@ -105,6 +118,23 @@ class FastMap
       @abort_score = move("A").score
     end
     @abort_score
+  end
+
+  def win_rate
+    if(@lift)
+      1
+    else
+      lambda_ratio = @lambdas.to_f / @total_lambdas
+      if(@dead)
+        lambda_ratio / 3
+      else
+        lambda_ratio / 2
+      end
+    end
+  end
+
+  def adjusted_win_rate
+    win_rate - (@moves.to_f / (@total_lambdas * 25))
   end
 
   def moves
@@ -150,6 +180,10 @@ class FastMap
     options << "L" if(pos[1] < @robot[1])
     options << "R" if(pos[1] > @robot[1])
     options[rand(options.size)] 
+  end
+
+  def total_lambdas
+    @total_lambdas
   end
 end
 
