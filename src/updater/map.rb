@@ -1,4 +1,9 @@
+require 'set'
+
 class Cell
+  attr_accessor :value
+  attr_reader :x, :y
+
   def initialize(map, x, y)
     @map, @x, @y = map, x, y
   end
@@ -31,17 +36,32 @@ class Cell
     self.class
   end
 
+  # update map metadata after move stage is complete
   def update_metadata(direction, metadata)
   end
 
+  # update map metadata after rock movement is calculated
   def update_metadata_rocks(metadata)
+  end
+
+  # update map metadata just after parsing/creation of the map
+  def update_initial_metadata(metadata)
+  end
+
+  def set_value!(distance, value)
+    @value = value - distance
   end
 end
 
 class Wall < Cell
+  def set_value!(distance, value)
+    @value = -1
+  end
 end
 
 class Lift < Cell
+  VALUE = 99
+
   def move_robot(direction)
     if !@map.lambdas_gone
       Lift
@@ -59,6 +79,19 @@ class Lift < Cell
       metadata["InLift"] = true
     end
   end
+
+  def update_initial_metadata(metadata)
+    (metadata["LiftPositions"] ||= Set.new) << [x, y]
+  end
+
+  def set_value!(distance, value)
+    if @map.lambdas_gone
+      # Note: this is wrong, but may work anyway as an easy-to-calculate replacement
+      @value = VALUE
+    else
+      super
+    end
+  end
 end
 
 class Earth < Cell
@@ -74,6 +107,8 @@ class Earth < Cell
 end
 
 class Lambda < Cell
+  VALUE = 25
+
   def move_robot(direction)
     if cell_at(direction.opposite) == nil
       Lambda
@@ -90,6 +125,10 @@ class Lambda < Cell
     else
       metadata["LambdasLeft"] = (metadata["LambdasLeft"] || 0).to_i + 1
     end
+  end
+
+  def update_initial_metadata(metadata)
+    (metadata["LambdaPositions"] ||= Set.new) << [x, y]
   end
 end
 
@@ -125,6 +164,10 @@ class Rock < Cell
     else
       Rock
     end
+  end
+
+  def set_value!(distance, value)
+    @value = value - (distance * 10)
   end
 end
 
@@ -195,6 +238,10 @@ class Robot < Cell
         metadata["Dead"] = true
       end
     end
+  end
+
+  def update_initial_metadata(metadata)
+    metadata["RobotPosition"] = [x, y]
   end
 end
 
@@ -275,15 +322,16 @@ class Parser
   end
 
   def self.render(map)
-    map.cells.reverse.map{|r| r.map{|c| render_cell(c)}.join}.join("\n") + 
+    map.cells.reverse.map{|r| r.map{|c| render_cell(c)}.join}.join("\n") +
     "\n\n" +
-    map.metadata.map{|k,v| k + " " + v.to_s}.join("\n")
+    map.metadata.map{|k,v| "#{k} #{v.inspect}" }.join("\n")
   end
 
   def self.render_cell(cell)
     CELL_CLASSES.each do |k,v|
       if v === cell
-        return k
+        s = "%02i" % cell.value
+        return "#{k} (#{s}) "
       end
     end
   end
@@ -297,7 +345,7 @@ class Map
     "R" => Right
   }
 
-  attr_reader :cells, :metadata
+  attr_reader :cells, :metadata, :width, :height
 
   def self.parse(string)
     Parser.parse(string)
@@ -305,13 +353,16 @@ class Map
 
   def initialize(rows, metadata = {})
     @width = rows[0].size
+    @metadata = metadata
     @cells = (0...rows.size).map do |y|
       line = rows[y]
       (0...line.size).map do |x|
-        line[x].new(self, x, y)
+        cell = line[x].new(self, x, y)
+        cell.update_initial_metadata(@metadata)
+        cell
       end
     end
-    @metadata = metadata
+    @height = @cells.size
   end
 
   def lambdas_gone
@@ -336,19 +387,33 @@ class Map
     Map.new(cells, metadata)
   end
 
-  def height
-    @cells.size
-  end
-
   def move_robot(direction)
     metadata = @metadata.clone
-    metadata['LambdasLeft'] = 0
+    metadata["LambdasLeft"] = 0
+    metadata["LambdaPositions"] = Set.new
+    metadata["LiftPositions"] = Set.new
     cells = @cells.map{|r| r.map{|c|
         dir = DIRECTION_CLASSES[direction]
         c.update_metadata(dir, metadata)
         c.move_robot(dir)
     }}
     Map.new(cells, metadata)
+  end
+
+  def score_cells!
+    lambda_pos = @metadata["LambdaPositions"]
+    value = Lambda::VALUE
+    if lambda_pos.empty?
+      lambda_pos = @metadata["LiftPositions"]
+      value = Lift::VALUE
+    end
+
+    @cells.each do |row|
+      row.each do |cell|
+        min_distance = lambda_pos.map {|x, y| (cell.x - x).abs + (cell.y - y).abs }.min
+        cell.set_value!(min_distance, value)
+      end
+    end
   end
 
   def command_robot(command)
@@ -369,7 +434,7 @@ class Map
   def score
     s = 0
     if(l = @metadata["Lambdas"])
-      s += l.to_i * 25
+      s += l.to_i * Lambda::VALUE
     end
     if(@metadata["InLift"])
       s *= 3
