@@ -49,19 +49,27 @@ class Cell
   def update_initial_metadata(metadata)
   end
 
-  def obstruction_score
-    [above, right, below, left].select {|c| Wall === c || Rock === c }.size
+  def neighbors
+    [above, right, below, left].compact
   end
 
-  def set_value!(distance, value)
-    dist_value = value - distance ** 2
-    @value = [(dist_value - obstruction_score), -1].max
+  def get_heatmap_value(current, distance, entropy)
+    if current.nil?
+      [-1, (Lambda::VALUE - distance**2)].max
+    else
+      best_neighbor = neighbors.collect {|c| c.value }.max
+      (best_neighbor || 0) - 1
+    end
+  end
+
+  def value
+    @map.metadata["HeatMap"][[x, y]]
   end
 end
 
 class Wall < Cell
-  def set_value!(distance, value)
-    @value = -1
+  def get_heatmap_value(current, distance, entropy)
+    -1
   end
 end
 
@@ -90,8 +98,8 @@ class Lift < Cell
     (metadata["LiftPositions"] ||= Set.new) << [x, y]
   end
 
-  def set_value!(distance, value)
-    @value = @map.lambdas_gone ? VALUE : -1
+  def get_heatmap_value(current, distance, entropy)
+    @map.lambdas_gone ? VALUE : -1
   end
 end
 
@@ -135,7 +143,7 @@ class Lambda < Cell
     (metadata["LambdaPositions"] ||= Set.new) << [x, y]
   end
 
-  def set_value!(distance, value)
+  def get_heatmap_value(current, distance, entropy)
     @value = VALUE
   end
 end
@@ -174,8 +182,8 @@ class Rock < Cell
     end
   end
 
-  def set_value!(distance, value)
-    @value = 0
+  def get_heatmap_value(current, distance, entropy)
+    -1
   end
 end
 
@@ -335,9 +343,13 @@ class Parser
   end
 
   def self.render(map)
-    map.cells.reverse.map{|r| r.map{|c| render_cell(c)}.join}.join("\n") +
-    "\n\n" +
-    map.metadata.map{|k,v| "#{k} #{v.inspect}" }.join("\n") + "\nScore #{map.score}"
+    cell_str = map.cells.reverse.map {|r| r.map{|c| render_cell(c)}.join}.join("\n")
+    metadata = map.metadata.keys.select {|k| !Map::HIDDEN_METADATA.member?(k) }.map do |k|
+      v = map.metadata[k]
+      "#{k} #{v.inspect}"
+    end
+    metadata_str = metadata.join("\n")
+    cell_str + "\n\n" + metadata_str + "\nScore #{map.score}"
   end
 
   def self.render_cell(cell)
@@ -359,6 +371,8 @@ class Map
     "D" => Down,
     "R" => Right
   }
+
+  HIDDEN_METADATA = ["HeatMap"]
 
   attr_reader :cells, :metadata, :width, :height
 
@@ -403,9 +417,9 @@ class Map
       cells = Parser.parse_lines(lines)
     else
       t1 = Time.new.to_f
-     cells = @cells.map{|r| r.map{|c|
-      c.update_metadata_rocks(metadata)
-      c.move_rocks
+      cells = @cells.map{|r| r.map{|c|
+        c.update_metadata_rocks(metadata)
+        c.move_rocks
       }}
       $time += (Time.new.to_f - t1)
     end
@@ -414,6 +428,7 @@ class Map
 
   def move_robot(direction)
     metadata = @metadata.clone
+    previous_lambdas = metadata["LambdasLeft"]
     metadata["LambdasLeft"] = 0
     metadata["LambdaPositions"] = Set.new
     metadata["LiftPositions"] = Set.new
@@ -422,21 +437,25 @@ class Map
         c.update_metadata(dir, metadata)
         c.move_robot(dir)
     }}
+    if previous_lambdas != metadata["LambdasLeft"]
+      metadata["HeatMap"] = {}
+    end
     Map.new(cells, metadata)
   end
 
-  def score_cells!
+  def score_cells!(entropy=0)
     lambda_pos = @metadata["LambdaPositions"]
-    value = Lambda::VALUE
     if lambda_pos.empty?
       lambda_pos = @metadata["LiftPositions"]
-      value = Lift::VALUE
     end
+
+    heatmap = (@metadata["HeatMap"] ||= {})
 
     @cells.each do |row|
       row.each do |cell|
         min_distance = lambda_pos.map {|x, y| (cell.x - x).abs + (cell.y - y).abs }.min
-        cell.set_value!(min_distance, value)
+        current = heatmap[[cell.x, cell.y]]
+        heatmap[[cell.x, cell.y]] = cell.get_heatmap_value(current, min_distance, entropy)
       end
     end
   end
