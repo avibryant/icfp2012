@@ -23,15 +23,15 @@ class Cell
     direction.cell_at(self)
   end
 
-  def moveRocks
+  def move_rocks
     self.class
   end
 
-  def moveRobot(direction)
+  def move_robot(direction)
     self.class
   end
 
-  def updateMetadata(direction, metadata)
+  def update_metadata(direction, metadata)
   end
 end
 
@@ -39,7 +39,7 @@ class Wall < Cell
 end
 
 class Lift < Cell
-  def moveRobot(direction)
+  def move_robot(direction)
     if !@map.lambdas_gone
       Lift
     elsif cell_at(direction.opposite) == nil
@@ -51,7 +51,7 @@ class Lift < Cell
     end
   end
 
-  def updateMetadata(direction, metadata)
+  def update_metadata(direction, metadata)
     if @map.lambdas_gone && (Robot === cell_at(direction.opposite))
       metadata["InLift"] = true
     end
@@ -59,7 +59,7 @@ class Lift < Cell
 end
 
 class Earth < Cell
-  def moveRobot(direction)
+  def move_robot(direction)
     if cell_at(direction.opposite) == nil
       Earth
     elsif Robot === cell_at(direction.opposite) 
@@ -71,7 +71,7 @@ class Earth < Cell
 end
 
 class Lambda < Cell
-  def moveRobot(direction)
+  def move_robot(direction)
     if cell_at(direction.opposite) == nil
       Lambda
     elsif Robot === cell_at(direction.opposite) 
@@ -81,7 +81,7 @@ class Lambda < Cell
     end
   end
 
-  def updateMetadata(direction, metadata)
+  def update_metadata(direction, metadata)
     if(Robot === cell_at(direction.opposite))
       metadata["Lambdas"] = (metadata["Lambdas"] || 0).to_i + 1
     else
@@ -91,32 +91,32 @@ class Lambda < Cell
 end
 
 class Rock < Cell
-  def moveRocks  
-    if movingDown || movingDownRight || movingDownLeft
+  def move_rocks
+    if moving_down || moving_down_right || moving_down_left
       Empty
     else
       Rock
     end
   end
 
-  def movingDown
+  def moving_down
     Empty === below
   end
 
-  def movingDownRight
+  def moving_down_right
     (Rock === below || Lambda === below) &&
         Empty === right &&
         Empty === right.below
   end
 
-  def movingDownLeft
-    !movingDownRight && 
+  def moving_down_left
+    !moving_down_right &&
       Rock === below &&
       Empty === left &&
       Empty === left.below
   end
 
-  def moveRobot(direction)
+  def move_robot(direction)
     if Robot === cell_at(direction.opposite) && Empty === cell_at(direction)
       Robot
     else
@@ -130,7 +130,7 @@ class DeadRobot < Cell
 end
 
 class Empty < Cell
-  def moveRobot(direction)
+  def move_robot(direction)
     if cell_at(direction.opposite) == nil
       Empty
     elsif Robot === cell_at(direction.opposite) 
@@ -142,12 +142,12 @@ class Empty < Cell
     end
   end
 
-  def moveRocks
+  def move_rocks
     if above == nil
       Empty
     elsif Rock === above ||
-      (Rock === above.left && above.left.movingDownRight) ||
-      (Rock === above.right && above.right.movingDownLeft)
+      (Rock === above.left && above.left.moving_down_right) ||
+      (Rock === above.right && above.right.moving_down_left)
       Rock
     else
       Empty
@@ -156,7 +156,7 @@ class Empty < Cell
 end
 
 class Robot < Cell
-  def moveRobot(direction)
+  def move_robot(direction)
     if cell_at(direction) == nil
       Robot
     elsif Empty === cell_at(direction) || Earth === cell_at(direction) || Lambda === cell_at(direction)
@@ -169,18 +169,19 @@ class Robot < Cell
       Robot
     end
   end
-  def moveRocks
+
+  def move_rocks
     if above == nil || above.above == nil
       Robot
-    elsif (Rock === above.above && above.above.movingDown) || (Rock === above.above.left && above.above.left.movingDownRight) ||
-      (Rock === above.above.right && above.above.right.movingDownLeft)
+    elsif (Rock === above.above && above.above.moving_down) || (Rock === above.above.left && above.above.left.moving_down_right) ||
+      (Rock === above.above.right && above.above.right.moving_down_left)
       Earth
     else
       Robot
     end
   end
 
-  def updateMetadata(direction, metadata)
+  def update_metadata(direction, metadata)
     metadata["Moves"] = (metadata["Moves"] || 0).to_i + 1
   end
 end
@@ -315,7 +316,7 @@ class Map
   end
 
   def move_rocks
-    Map.new(@cells.map{|r| r.map{|c| c.moveRocks}}, @metadata)
+    Map.new(@cells.map{|r| r.map{|c| c.move_rocks}}, @metadata)
   end
 
   def height
@@ -327,8 +328,8 @@ class Map
     metadata['LambdasLeft'] = 0
     cells = @cells.map{|r| r.map{|c|
         dir = DIRECTION_CLASSES[direction]
-        c.updateMetadata(dir, metadata)
-        c.moveRobot(dir)
+        c.update_metadata(dir, metadata)
+        c.move_robot(dir)
     }}
     Map.new(cells, metadata)
   end
