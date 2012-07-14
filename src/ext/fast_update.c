@@ -45,6 +45,7 @@ VALUE update(VALUE self, VALUE map) {
   int row_length, r, c;
   int lambdas = 0;
   int lift_r = -1, lift_c = -1;
+  VALUE robot_dead = Qfalse;
 
   for(r = 0; r < num_rows; r++) {
     rb_ary_store(output, r, Qnil);
@@ -62,6 +63,8 @@ VALUE update(VALUE self, VALUE map) {
           if(str_at(rows[r+1], c) == ' ') {
             set(map, output, r+1, c, '*');
             set(map, output, r,   c, ' ');
+            if(r+2 < num_rows && str_at(rows[r+2], c) == 'R')
+              robot_dead = Qtrue;
           }
 
           if(str_at(rows[r+1], c) == '*') {
@@ -70,12 +73,16 @@ VALUE update(VALUE self, VALUE map) {
                   str_at(rows[r+1], c+1) == ' ') {
               set(map, output, r+1, c+1, '*');
               set(map, output, r,   c,   ' ');
+              if(r+2 < num_rows && str_at(rows[r+2], c+1) == 'R')
+                robot_dead = Qtrue;
             } else
               if(c-1 >= 0 &&
                     str_at(rows[r],   c-1) == ' ' &&
                     str_at(rows[r+1], c-1) == ' ') {
                 set(map, output, r+1, c-1, '*');
                 set(map, output, r,   c,   ' ');
+                if(r+2 < num_rows && str_at(rows[r+2], c-1) == 'R')
+                  robot_dead = Qtrue;
               }
           } else if(str_at(rows[r+1], c) == '\\') {
             if(c+1 < row_length &&
@@ -83,6 +90,8 @@ VALUE update(VALUE self, VALUE map) {
                   str_at(rows[r+1], c+1) == ' ') {
               set(map, output, r+1, c+1, '*');
               set(map, output, r,   c,   ' ');
+              if(r+2 < num_rows && str_at(rows[r+2], c+1) == 'R')
+                robot_dead = Qtrue;
             }
           }
         }
@@ -104,7 +113,7 @@ VALUE update(VALUE self, VALUE map) {
 
   fill_unchanged(map, output);
 
-  return output;
+  return rb_ary_new3(2, output, robot_dead);
 }
 
 void destruct(VALUE array, int* x, int* y) {
@@ -134,6 +143,8 @@ VALUE refresh_update(VALUE output, VALUE map, VALUE state) {
   VALUE new_rock_list = rb_ary_new();
   VALUE new_lamb_list = rb_ary_new();
 
+  VALUE robot_dead = Qfalse;
+
   elems = RARRAY_PTR(rock_list);
   num_elems = RARRAY_LEN(rock_list);
 
@@ -144,6 +155,10 @@ VALUE refresh_update(VALUE output, VALUE map, VALUE state) {
       if(str_at(rows[r+1], c) == ' ') {
         set(map, output, r+1, c, '*');
         set(map, output, r,   c, ' ');
+
+        if(r+2 < num_rows && str_at(rows[r+2], c) == 'R') {
+          robot_dead = Qtrue;
+        }
 
         rb_ary_push(new_rock_list,
                     rb_ary_new3(2, INT2FIX(r+1), INT2FIX(c)));
@@ -156,6 +171,10 @@ VALUE refresh_update(VALUE output, VALUE map, VALUE state) {
           set(map, output, r+1, c+1, '*');
           set(map, output, r,   c,   ' ');
 
+          if(r+2 < num_rows && str_at(rows[r+2], c+1) == 'R') {
+            robot_dead = Qtrue;
+          }
+
           rb_ary_push(new_rock_list,
                       rb_ary_new3(2, INT2FIX(r+1), INT2FIX(c+1)));
         } else
@@ -164,6 +183,10 @@ VALUE refresh_update(VALUE output, VALUE map, VALUE state) {
                 str_at(rows[r+1], c-1) == ' ') {
             set(map, output, r+1, c-1, '*');
             set(map, output, r,   c,   ' ');
+
+            if(r+2 < num_rows && str_at(rows[r+2], c-1) == 'R') {
+              robot_dead = Qtrue;
+            }
 
             rb_ary_push(new_rock_list,
                         rb_ary_new3(2, INT2FIX(r+1), INT2FIX(c-1)));
@@ -174,6 +197,10 @@ VALUE refresh_update(VALUE output, VALUE map, VALUE state) {
               str_at(rows[r+1], c+1) == ' ') {
           set(map, output, r+1, c+1, '*');
           set(map, output, r,   c,   ' ');
+
+          if(r+2 < num_rows && str_at(rows[r+2], c+1) == 'R') {
+            robot_dead = Qtrue;
+          }
 
           rb_ary_push(new_rock_list,
                       rb_ary_new3(2, INT2FIX(r+1), INT2FIX(c+1)));
@@ -202,8 +229,9 @@ VALUE refresh_update(VALUE output, VALUE map, VALUE state) {
 
   fill_unchanged(map, output);
 
-  return rb_ary_new3(2, output,
-            rb_ary_new3(3, new_rock_list, new_lamb_list, lift_pos));
+  return rb_ary_new3(3, output,
+            rb_ary_new3(3, new_rock_list, new_lamb_list, lift_pos),
+            robot_dead);
 }
 
 VALUE ultra_update(VALUE self, VALUE map, VALUE state) {
@@ -218,6 +246,7 @@ VALUE ultra_update(VALUE self, VALUE map, VALUE state) {
   int row_length, r, c;
   int lambdas = 0;
   int lift_r = -1, lift_c = -1;
+  VALUE robot_dead = Qfalse;
 
   for(r = 0; r < num_rows; r++) {
     rb_ary_store(output, r, Qnil);
@@ -230,6 +259,8 @@ VALUE ultra_update(VALUE self, VALUE map, VALUE state) {
   VALUE lift_pos = Qnil;
 
   for(r = num_rows - 1; r >= 0; r--) {
+    int added_rock = 0;
+
     row = rows[r];
     row_data = RSTRING_PTR(row);
     row_length = RSTRING_LEN(row);
@@ -242,6 +273,11 @@ VALUE ultra_update(VALUE self, VALUE map, VALUE state) {
             set(map, output, r+1, c, '*');
             set(map, output, r,   c, ' ');
 
+            if(r+2 < num_rows && str_at(rows[r+2], c) == 'R') {
+              robot_dead = Qtrue;
+            }
+
+            added_rock = 1;
             rb_ary_push(new_rock_list,
                         rb_ary_new3(2, INT2FIX(r+1), INT2FIX(c)));
           }
@@ -253,6 +289,11 @@ VALUE ultra_update(VALUE self, VALUE map, VALUE state) {
               set(map, output, r+1, c+1, '*');
               set(map, output, r,   c,   ' ');
 
+              if(r+2 < num_rows && str_at(rows[r+2], c+1) == 'R') {
+                robot_dead = Qtrue;
+              }
+
+              added_rock = 1;
               rb_ary_push(new_rock_list,
                           rb_ary_new3(2, INT2FIX(r+1), INT2FIX(c+1)));
             } else
@@ -262,6 +303,11 @@ VALUE ultra_update(VALUE self, VALUE map, VALUE state) {
                 set(map, output, r+1, c-1, '*');
                 set(map, output, r,   c,   ' ');
 
+                if(r+2 < num_rows && str_at(rows[r+2], c-1) == 'R') {
+                  robot_dead = Qtrue;
+                }
+
+                added_rock = 1;
                 rb_ary_push(new_rock_list,
                             rb_ary_new3(2, INT2FIX(r+1), INT2FIX(c-1)));
               }
@@ -272,10 +318,19 @@ VALUE ultra_update(VALUE self, VALUE map, VALUE state) {
               set(map, output, r+1, c+1, '*');
               set(map, output, r,   c,   ' ');
 
+              if(r+2 < num_rows && str_at(rows[r+2], c+1) == 'R') {
+                robot_dead = Qtrue;
+              }
+
+              added_rock = 1;
               rb_ary_push(new_rock_list,
                           rb_ary_new3(2, INT2FIX(r+1), INT2FIX(c+1)));
             }
           }
+        }
+
+        if(!added_rock) {
+          rb_ary_push(new_rock_list, rb_ary_new3(2, INT2FIX(r), INT2FIX(c)));
         }
         break;
       case 'L':
@@ -300,12 +355,273 @@ VALUE ultra_update(VALUE self, VALUE map, VALUE state) {
 
   fill_unchanged(map, output);
 
-  return rb_ary_new3(2, output,
-            rb_ary_new3(3, new_rock_list, new_lamb_list, lift_pos));
+  return rb_ary_new3(3, output,
+            rb_ary_new3(3, new_rock_list, new_lamb_list, lift_pos),
+            robot_dead);
+}
+
+VALUE move(VALUE self, VALUE map, VALUE row_n, VALUE col_n, VALUE dir) {
+  map = rb_Array(map);
+
+  int num_rows = RARRAY_LEN(map);
+  VALUE output = rb_ary_new2(num_rows);
+
+  VALUE* rows = RARRAY_PTR(map);
+  VALUE row;
+  char* row_data;
+  int row_length, r, c, d;
+  int lambdas = 0;
+  int lift_r = -1, lift_c = -1;
+
+  for(r = 0; r < num_rows; r++) {
+    rb_ary_store(output, r, Qnil);
+  }
+
+  r = FIX2INT(row_n);
+  c = FIX2INT(col_n);
+  d = FIX2INT(dir);
+
+  row = rows[r];
+  row_data = RSTRING_PTR(row);
+  row_length = RSTRING_LEN(row);
+
+  switch(d) {
+  case 0: // left
+    if(c == 0) break;
+    switch(row_data[c-1]) {
+    case 'O':
+      lambdas = -2;
+    case '\\':
+      lambdas++;
+    case ' ':
+    case '.':
+      set(map, output, r, c-1, 'R');
+      set(map, output, r, c,   ' ');
+      c--;
+      break;
+    case '*':
+      if(c > 1 && row_data[c-2] == ' ') {
+        set(map, output, r, c-2, '*');
+        set(map, output, r, c-1, 'R');
+        set(map, output, r, c,   ' ');
+        c--;
+        break;
+      }
+    }
+    break;
+  case 1: // right
+    if(c == row_length-1) break;
+    switch(row_data[c+1]) {
+    case 'O':
+      lambdas = -2;
+    case '\\':
+      lambdas++;
+    case ' ':
+    case '.':
+      set(map, output, r, c+1, 'R');
+      set(map, output, r, c,   ' ');
+      c++;
+      break;
+    case '*':
+      if(c < row_length-2 && row_data[c+2] == ' ') {
+        set(map, output, r, c+2, '*');
+        set(map, output, r, c+1, 'R');
+        set(map, output, r, c,   ' ');
+        c++;
+        break;
+      }
+    }
+    break;
+  case 2: // up
+    if(r == 0) break;
+    switch(str_at(rows[r-1],c)) {
+    case 'O':
+      lambdas = -2;
+    case '\\':
+      lambdas++;
+    case ' ':
+    case '.':
+      set(map, output, r-1, c, 'R');
+      set(map, output, r,   c, ' ');
+      r--;
+      break;
+    }
+    break;
+  case 3: // down
+    if(r >= num_rows-1) break;
+    switch(str_at(rows[r+1],c)) {
+    case 'O':
+      lambdas = -2;
+    case '\\':
+      lambdas++;
+    case ' ':
+    case '.':
+      set(map, output, r+1, c, 'R');
+      set(map, output, r,   c, ' ');
+      r++;
+      break;
+    }
+    break;
+  default:
+    break;
+  }
+
+  fill_unchanged(map, output);
+
+  return rb_ary_new3(3, output, INT2FIX(lambdas),
+                     rb_ary_new3(2, INT2FIX(r), INT2FIX(c)));
+}
+
+VALUE move_rock_state(VALUE cur, int cr, int cc, int nr, int nc) {
+  VALUE rl = RARRAY_PTR(cur)[0];
+
+  int num_rocks = RARRAY_LEN(rl);
+  VALUE* rocks =  RARRAY_PTR(rl);
+
+  int r, c, i;
+
+  for(i = 0; i < num_rocks; i++) {
+    destruct(rocks[i], &r, &c);
+
+    if(r == cr && c == cc) {
+      VALUE new_state = rb_ary_dup(cur);
+      VALUE new_rl = rb_ary_dup(rl);
+
+      RARRAY_PTR(new_state)[0] = new_rl;
+      RARRAY_PTR(new_rl)[i] = rb_ary_new3(2, INT2FIX(nr), INT2FIX(nc));
+
+      return new_state;
+    }
+  }
+
+  return cur;
+}
+
+VALUE ultra_move(VALUE self, VALUE map, VALUE row_n, VALUE col_n,
+                 VALUE dir, VALUE state)
+{
+  map = rb_Array(map);
+
+  int num_rows = RARRAY_LEN(map);
+  VALUE output = rb_ary_new2(num_rows);
+
+  VALUE* rows = RARRAY_PTR(map);
+  VALUE row;
+  char* row_data;
+  int row_length, r, c, d;
+  int lambdas = 0;
+  int lift_r = -1, lift_c = -1;
+
+  VALUE new_state = Qnil;
+
+  for(r = 0; r < num_rows; r++) {
+    rb_ary_store(output, r, Qnil);
+  }
+
+  r = FIX2INT(row_n);
+  c = FIX2INT(col_n);
+  d = FIX2INT(dir);
+
+  row = rows[r];
+  row_data = RSTRING_PTR(row);
+  row_length = RSTRING_LEN(row);
+
+  switch(d) {
+  case 0: // left
+    if(c == 0) break;
+    switch(row_data[c-1]) {
+    case 'O':
+      lambdas = -2;
+    case '\\':
+      lambdas++;
+    case ' ':
+    case '.':
+      set(map, output, r, c-1, 'R');
+      set(map, output, r, c,   ' ');
+      c--;
+      break;
+    case '*':
+      if(c > 1 && row_data[c-2] == ' ') {
+        new_state = move_rock_state(state, r, c-1, r, c-2);
+
+        set(map, output, r, c-2, '*');
+        set(map, output, r, c-1, 'R');
+        set(map, output, r, c,   ' ');
+        c--;
+        break;
+      }
+    }
+    break;
+  case 1: // right
+    if(c == row_length-1) break;
+    switch(row_data[c+1]) {
+    case 'O':
+      lambdas = -2;
+    case '\\':
+      lambdas++;
+    case ' ':
+    case '.':
+      set(map, output, r, c+1, 'R');
+      set(map, output, r, c,   ' ');
+      c++;
+      break;
+    case '*':
+      if(c < row_length-2 && row_data[c+2] == ' ') {
+        new_state = move_rock_state(state, r, c+1, r, c+2);
+
+        set(map, output, r, c+2, '*');
+        set(map, output, r, c+1, 'R');
+        set(map, output, r, c,   ' ');
+        c++;
+        break;
+      }
+    }
+    break;
+  case 2: // up
+    if(r == 0) break;
+    switch(str_at(rows[r-1],c)) {
+    case 'O':
+      lambdas = -2;
+    case '\\':
+      lambdas++;
+    case ' ':
+    case '.':
+      set(map, output, r-1, c, 'R');
+      set(map, output, r,   c, ' ');
+      r--;
+      break;
+    }
+    break;
+  case 3: // down
+    if(r >= num_rows-1) break;
+    switch(str_at(rows[r+1],c)) {
+    case 'O':
+      lambdas = -2;
+    case '\\':
+      lambdas++;
+    case ' ':
+    case '.':
+      set(map, output, r+1, c, 'R');
+      set(map, output, r,   c, ' ');
+      r++;
+      break;
+    }
+    break;
+  default:
+    break;
+  }
+
+  fill_unchanged(map, output);
+
+  return rb_ary_new3(4, output, INT2FIX(lambdas),
+                     rb_ary_new3(2, INT2FIX(r), INT2FIX(c)),
+                     new_state == Qnil ? state : new_state);
 }
 
 void Init_fast_update() {
   VALUE mod = rb_define_module("FastUpdate");
   rb_define_singleton_method(mod, "update", update, 1);
   rb_define_singleton_method(mod, "ultra_update", ultra_update, 2);
+  rb_define_singleton_method(mod, "move", move, 4);
+  rb_define_singleton_method(mod, "ultra_move", ultra_move, 5);
 }

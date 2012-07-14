@@ -3,10 +3,15 @@ require 'map'
 class Tree
   DIRECTIONS = ["U", "D", "L", "R", "W", "A"]
 
-  attr_reader :leaves
+  attr_reader :leaves, :move_robot_time, :move_rocks_time, :score_time, :sort_time, :leaves_considered
 
   def initialize(map)
     @leaves = {"" => map}
+    @move_robot_time = 0
+    @move_rocks_time = 0
+    @score_time = 0
+    @sort_time = 0
+    @leaves_considered = 0
   end
 
   def iterate
@@ -16,7 +21,15 @@ class Tree
         new_leaves[moves] = leaf
       else
         DIRECTIONS.each do |dir|
-          new_leaves[moves + dir] = leaf.command_robot(dir).move_rocks
+          t1 = Time.new.to_f
+          mx = leaf.command_robot(dir)
+          t2 = Time.new.to_f
+          mr = mx.move_rocks
+          t3 = Time.new.to_f
+          new_leaves[moves + dir] = mr
+          @leaves_considered += 1
+          @move_robot_time += (t2 - t1)
+          @move_rocks_time += (t3 - t2)
        end
       end
     end
@@ -25,9 +38,11 @@ class Tree
 
   def top(n)
     scores = {}
+    t1 = Time.new.to_f
     @leaves.each do |moves, leaf|
       scores[moves] = [leaf.score, -leaf.robot_distance_to_closest_lambda]
     end
+    t2 = Time.new.to_f
 
     sorted_moves = scores.keys.shuffle.sort{|a,b| scores[a][0] + scores[a][1]*2 <=> scores[b][0] + scores[b][1]*2}
     best_done = sorted_moves.reverse.find{|m| @leaves[m].is_done?}
@@ -35,10 +50,20 @@ class Tree
     if(sorted_moves.size> n)
       sorted_moves = sorted_moves[-1 * n .. -1]
     end
+    t3 = Time.new.to_f
+
+    @score_time += (t2 - t1)
+    @sort_time += (t3 - t2)
     sorted_moves.map{|m| [m, scores[m]]}.reverse
   end
 
   def prune(n)
+# the below didn't work well but leaving it in for posterity
+#    best_score = top(1)[0][1]
+#    if(best_score && best_score > 0)
+#      n *= (1.0 / Math.log(best_score))
+#      n = n.to_i
+#    end
     pruned = {}
     i = 0
     top(11 * n).each do |k,s|
@@ -65,13 +90,21 @@ map = Map.parse(STDIN.read)
 tree = Tree.new(map)
 iterations = ARGV.shift.to_i
 prune = ARGV.shift.to_i
+iterate_time = 0
 iterations.times do |i|
+  t1 = Time.new.to_f
   tree.iterate
+  iterate_time += (Time.new.to_f - t1)
   tree.prune(prune)
   puts "Iteration #{i+1}"
   puts "Leaves: #{tree.leaves.size}"
+  puts "Leaves considered: #{tree.leaves_considered}"
   moves, score = tree.top(1)[0]
   puts "Best score: #{score[0]}"
   puts score[1]
   puts "Best moves: #{moves}"
+  puts "Move robot time: #{tree.move_robot_time}"
+  puts "Move rocks time: #{tree.move_rocks_time}"
+  puts "Extra iterate time: #{iterate_time - tree.move_robot_time - tree.move_rocks_time}"
+  puts $time
 end

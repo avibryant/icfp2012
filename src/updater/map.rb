@@ -1,3 +1,5 @@
+require '../ext/fast_update'
+
 class Cell
   def initialize(map, x, y)
     @map, @x, @y = map, x, y
@@ -67,6 +69,9 @@ class Lift < Cell
       metadata["InLift"] = true
     end
   end
+end
+
+class OpenLift < Lift
 end
 
 class Earth < Cell
@@ -251,6 +256,7 @@ class Parser
     "#" => Wall,
     "*" => Rock,
     "L" => Lift,
+    "O" => OpenLift,
     "." => Earth,
     "\\" => Lambda,
     " " => Empty,
@@ -269,18 +275,22 @@ class Parser
       lines = lines[0...i]
     end
 
+    cells = parse_lines(lines)
+
+    Map.new(cells, metadata)
+  end
+
+  def self.parse_lines(lines)
     rows = lines.reverse.map do |r|
       classes = []
       r.each_char{|c| classes << CELL_CLASSES[c]}
       classes
     end
     maxSize = rows.map {|classes| classes.size}.max
-    cells = rows.map do |classes|
+    rows.map do |classes|
       (maxSize - classes.size).times {classes << Empty}
       classes
     end
-
-    Map.new(cells, metadata)
   end
 
   def self.render(map)
@@ -298,6 +308,8 @@ class Parser
     end
   end
 end
+
+$time = 0
 
 class Map
   DIRECTION_CLASSES = {
@@ -408,10 +420,20 @@ class Map
 
   def move_rocks
     metadata = @metadata.clone
-    cells = @cells.map{|r| r.map{|c|
+    if ENV["FAST"]
+      old_lines = @cells.reverse.map{|r| r.map{|c| Parser.render_cell(c)}.join}
+      t1 = Time.new.to_f
+      lines = FastUpdate.update(old_lines)
+      $time += (Time.new.to_f - t1)
+      cells = Parser.parse_lines(lines)
+    else
+      t1 = Time.new.to_f
+     cells = @cells.map{|r| r.map{|c|
       c.update_metadata_rocks(metadata)
       c.move_rocks
-    }}
+      }}
+      $time += (Time.new.to_f - t1)
+    end
     Map.new(cells, metadata)
   end
 
