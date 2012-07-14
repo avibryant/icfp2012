@@ -443,6 +443,12 @@ class Map
     Map.new(cells, metadata)
   end
 
+  # This is a simple heatmap scoring algorithm; it initializes each cell to either
+  # 99 (goal), -1 (obstacle), or the taxicab distance to the closest goal tile.
+  # After that, subsequent calls will simply assign score each tile as either one of
+  # the extrema (for goal/obstacle tiles) or max(neighbor scores) - 1.
+  # After any lambda is collected (handled in #move_robot, above) the heatmap is
+  # reset so new goal distances can be calculated.
   def score_cells!(entropy=0)
     lambda_pos = @metadata["LambdaPositions"]
     if lambda_pos.empty?
