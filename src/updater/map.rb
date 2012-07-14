@@ -1,6 +1,10 @@
+require 'set'
 require '../ext/fast_update'
 
 class Cell
+  attr_accessor :value
+  attr_reader :x, :y
+
   def initialize(map, x, y)
     @map, @x, @y = map, x, y
   end
@@ -33,17 +37,45 @@ class Cell
     self.class
   end
 
+  # update map metadata after move stage is complete
   def update_metadata(direction, metadata)
   end
 
+  # update map metadata after rock movement is calculated
   def update_metadata_rocks(metadata)
+  end
+
+  # update map metadata just after parsing/creation of the map
+  def update_initial_metadata(metadata)
+  end
+
+  def neighbors
+    [above, right, below, left].compact
+  end
+
+  def get_heatmap_value(current, distance, entropy)
+    if current.nil?
+      [-1, (Lambda::VALUE - distance**2)].max
+    else
+      best_neighbor = neighbors.collect {|c| c.value }.max
+      (best_neighbor || 0) - 1
+    end
+  end
+
+  def value
+    @map.metadata["HeatMap"][[x, y]]
   end
 end
 
 class Wall < Cell
+  def get_heatmap_value(current, distance, entropy)
+    -1
+  end
 end
 
 class Lift < Cell
+  VALUE = 99
+
   def move_robot(direction)
     if !@map.lambdas_gone
       Lift
@@ -61,6 +93,14 @@ class Lift < Cell
       metadata["InLift"] = true
     end
   end
+
+  def update_initial_metadata(metadata)
+    (metadata["LiftPositions"] ||= Set.new) << [x, y]
+  end
+
+  def get_heatmap_value(current, distance, entropy)
+    @map.lambdas_gone ? VALUE : -1
+  end
 end
 
 class OpenLift < Lift
@@ -70,7 +110,7 @@ class Earth < Cell
   def move_robot(direction)
     if cell_at(direction.opposite) == nil
       Earth
-    elsif Robot === cell_at(direction.opposite) 
+    elsif Robot === cell_at(direction.opposite)
       Robot
     else
       Earth
@@ -79,10 +119,12 @@ class Earth < Cell
 end
 
 class Lambda < Cell
+  VALUE = 99
+
   def move_robot(direction)
     if cell_at(direction.opposite) == nil
       Lambda
-    elsif Robot === cell_at(direction.opposite) 
+    elsif Robot === cell_at(direction.opposite)
       Robot
     else
       Lambda
@@ -95,6 +137,14 @@ class Lambda < Cell
     else
       metadata["LambdasLeft"] = (metadata["LambdasLeft"] || 0).to_i + 1
     end
+  end
+
+  def update_initial_metadata(metadata)
+    (metadata["LambdaPositions"] ||= Set.new) << [x, y]
+  end
+
+  def get_heatmap_value(current, distance, entropy)
+    @value = VALUE
   end
 end
 
@@ -131,6 +181,10 @@ class Rock < Cell
       Rock
     end
   end
+
+  def get_heatmap_value(current, distance, entropy)
+    -1
+  end
 end
 
 class DeadRobot < Cell
@@ -141,7 +195,7 @@ class Empty < Cell
   def move_robot(direction)
     if cell_at(direction.opposite) == nil
       Empty
-    elsif Robot === cell_at(direction.opposite) 
+    elsif Robot === cell_at(direction.opposite)
       Robot
     elsif (Right == direction || Left == direction) && Rock === cell_at(direction.opposite) && Robot === cell_at(direction.opposite).cell_at(direction.opposite)
       Rock
@@ -200,6 +254,10 @@ class Robot < Cell
         metadata["Dead"] = true
       end
     end
+  end
+
+  def update_initial_metadata(metadata)
+    metadata["RobotPosition"] = [x, y]
   end
 end
 
@@ -285,16 +343,20 @@ class Parser
   end
 
   def self.render(map)
-    map.cells.reverse.map{|r| r.map{|c| render_cell(c)}.join}.join("\n") + 
-    "\n\n" +
-    map.metadata.map{|k,v| k + " " + v.to_s}.join("\n") +
-    "\nScore " + map.score.to_s
+    cell_str = map.cells.reverse.map {|r| r.map{|c| render_cell(c)}.join}.join("\n")
+    metadata = map.metadata.keys.select {|k| !Map::HIDDEN_METADATA.member?(k) }.map do |k|
+      v = map.metadata[k]
+      "#{k} #{v.inspect}"
+    end
+    metadata_str = metadata.join("\n")
+    cell_str + "\n\n" + metadata_str + "\nScore #{map.score}"
   end
 
   def self.render_cell(cell)
     CELL_CLASSES.each do |k,v|
       if v === cell
-        return k
+        s = "%02i" % cell.value
+        return "#{k}:#{s} "
       end
     end
   end
@@ -310,7 +372,9 @@ class Map
     "R" => Right
   }
 
-  attr_reader :cells, :metadata
+  HIDDEN_METADATA = ["HeatMap"]
+
+  attr_reader :cells, :metadata, :width, :height
 
   def self.parse(string)
     Parser.parse(string)
@@ -318,17 +382,20 @@ class Map
 
   def initialize(rows, metadata = {})
     @width = rows[0].size
+    @metadata = metadata.clone
     @cells = (0...rows.size).map do |y|
       line = rows[y]
       (0...line.size).map do |x|
-        line[x].new(self, x, y)
+        cell = line[x].new(self, x, y)
+        cell.update_initial_metadata(@metadata)
+        cell
       end
     end
-    @metadata = metadata.clone
+    @height = @cells.size
   end
 
   def lambdas_gone
-    @metadata["LambdasLeft"].to_i == 0
+    @metadata["LambdasLeft"].to_s == "0"
   end
 
   def [](x,y)
@@ -350,28 +417,53 @@ class Map
       cells = Parser.parse_lines(lines)
     else
       t1 = Time.new.to_f
-     cells = @cells.map{|r| r.map{|c|
-      c.update_metadata_rocks(metadata)
-      c.move_rocks
+      cells = @cells.map{|r| r.map{|c|
+        c.update_metadata_rocks(metadata)
+        c.move_rocks
       }}
       $time += (Time.new.to_f - t1)
     end
     Map.new(cells, metadata)
   end
 
-  def height
-    @cells.size
-  end
-
   def move_robot(direction)
     metadata = @metadata.clone
-    metadata['LambdasLeft'] = 0
+    previous_lambdas = metadata["LambdasLeft"]
+    metadata["LambdasLeft"] = 0
+    metadata["LambdaPositions"] = Set.new
+    metadata["LiftPositions"] = Set.new
     cells = @cells.map{|r| r.map{|c|
         dir = DIRECTION_CLASSES[direction]
         c.update_metadata(dir, metadata)
         c.move_robot(dir)
     }}
+    if previous_lambdas != metadata["LambdasLeft"]
+      metadata["HeatMap"] = {}
+    end
     Map.new(cells, metadata)
+  end
+
+  # This is a simple heatmap scoring algorithm; it initializes each cell to either
+  # 99 (goal), -1 (obstacle), or the taxicab distance to the closest goal tile.
+  # After that, subsequent calls will simply assign score each tile as either one of
+  # the extrema (for goal/obstacle tiles) or max(neighbor scores) - 1.
+  # After any lambda is collected (handled in #move_robot, above) the heatmap is
+  # reset so new goal distances can be calculated.
+  def score_cells!(entropy=0)
+    lambda_pos = @metadata["LambdaPositions"]
+    if lambda_pos.empty?
+      lambda_pos = @metadata["LiftPositions"]
+    end
+
+    heatmap = (@metadata["HeatMap"] ||= {})
+
+    @cells.each do |row|
+      row.each do |cell|
+        min_distance = lambda_pos.map {|x, y| (cell.x - x).abs + (cell.y - y).abs }.min
+        current = heatmap[[cell.x, cell.y]]
+        heatmap[[cell.x, cell.y]] = cell.get_heatmap_value(current, min_distance, entropy)
+      end
+    end
   end
 
   def command_robot(command)
@@ -392,7 +484,7 @@ class Map
   def score
     s = 0
     if(l = @metadata["Lambdas"])
-      s += l.to_i * 25
+      s += l.to_i * Lambda::VALUE
     end
     if(@metadata["InLift"])
       s *= 3
