@@ -261,7 +261,7 @@ class Robot < Cell
 
     flood_rate = metadata["Flooding"].to_i
     if flood_rate > 0
-      water_level = (metadata["Moves"] + 1) / flood_rate
+      water_level = (metadata["Moves"] / flood_rate) + 1
       metadata["Water"] = water_level
       if underwater?
         metadata["TimeUnderWater"] += 1
