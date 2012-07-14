@@ -29,7 +29,9 @@ class Tree
       scores[moves] = leaf.score
     end
 
-    sorted_moves = scores.keys.sort{|a,b| scores[a] <=> scores[b]}
+    sorted_moves = scores.keys.shuffle.sort{|a,b| scores[a] <=> scores[b]}
+    best_done = sorted_moves.reverse.find{|m| @leaves[m].is_done?}
+    sorted_moves = sorted_moves.reject{|m| @leaves[m].is_done? && m != best_done}
     if(sorted_moves.size> n)
       sorted_moves = sorted_moves[-1 * n .. -1]
     end
