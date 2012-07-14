@@ -1,14 +1,21 @@
 require '../ext/fast_update'
 
+USE_ULTRA = ENV["ULTRA"]
+
 class FastMap  
-  def initialize(lines, moves = "", lambdas = 0, robot = nil, lift = false, dead = false, aborted = false)
+  def initialize(lines, state = nil, moves = "", lambdas = 0, robot = nil, lift = false, dead = false, aborted = false)
     @lines = lines
+    @state = state
     @moves = moves
     @lambdas = lambdas
     @robot = robot || find("R")
     @lift = lift
     @dead = dead
     @aborted = aborted
+
+    if !state && USE_ULTRA
+      @lines, @state = FastUpdate.ultra_update(@lines, @state)
+    end
   end
 
   DIR_MAP =
@@ -23,12 +30,17 @@ class FastMap
     end
 
     if (dir == "W" || dir == "A")
-      lines, lambdas, robot, lift = @lines, 0, @pos, @lift
+      lines, lambdas, robot, lift, state = @lines, 0, @pos, @lift, @state
       if(dir == "A")
         aborted = true
       end
     else
-      lines, lambdas, robot = FastUpdate.move(@lines, @robot[0], @robot[1], DIR_MAP[dir]) 
+      if USE_ULTRA
+        lines, lambdas, robot, state = FastUpdate.ultra_move(@lines, @robot[0], @robot[1], DIR_MAP[dir], @state)
+      else
+        lines, lambdas, robot = FastUpdate.move(@lines, @robot[0], @robot[1], DIR_MAP[dir])
+      end
+
       if lambdas == -1
         lambdas = 0
         lift = true
@@ -38,8 +50,14 @@ class FastMap
       aborted = @aborted
       moves = 1
     end
-    lines2, dead = FastUpdate.update(lines)
-    self.class.new(lines2, @moves + dir, @lambdas + lambdas, robot, lift, dead, aborted)
+
+    if USE_ULTRA
+      lines2, state2, dead = FastUpdate.ultra_update(lines, state)
+    else
+      lines2, dead = FastUpdate.update(lines)
+      state2 = nil
+    end
+    self.class.new(lines2, state2, @moves + dir, @lambdas + lambdas, robot, lift, dead, aborted)
   end
 
   def find(char)
