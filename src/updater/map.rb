@@ -54,7 +54,7 @@ class Cell
 
   def set_value!(distance, value)
     dist_value = value - distance ** 2
-    @value = dist_value - obstruction_score
+    @value = [(dist_value - obstruction_score), -1].max
   end
 end
 
@@ -90,11 +90,7 @@ class Lift < Cell
   end
 
   def set_value!(distance, value)
-    if @map.lambdas_gone
-      @value = VALUE
-    else
-      super
-    end
+    @value = @map.lambdas_gone ? VALUE : -1
   end
 end
 
@@ -374,7 +370,7 @@ class Map
   end
 
   def lambdas_gone
-    @metadata["LambdasLeft"] == "0"
+    @metadata["LambdasLeft"].to_i == 0
   end
 
   def [](x,y)
