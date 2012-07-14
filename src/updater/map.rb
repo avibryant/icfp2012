@@ -1,3 +1,5 @@
+require '../ext/fast_update'
+
 class Cell
   def initialize(map, x, y)
     @map, @x, @y = map, x, y
@@ -260,18 +262,22 @@ class Parser
       lines = lines[0...i]
     end
 
+    cells = parse_lines(lines)
+
+    Map.new(cells, metadata)
+  end
+
+  def self.parse_lines(lines)
     rows = lines.reverse.map do |r|
       classes = []
       r.each_char{|c| classes << CELL_CLASSES[c]}
       classes
     end
     maxSize = rows.map {|classes| classes.size}.max
-    cells = rows.map do |classes|
+    rows.map do |classes|
       (maxSize - classes.size).times {classes << Empty}
       classes
     end
-
-    Map.new(cells, metadata)
   end
 
   def self.render(map)
@@ -330,10 +336,13 @@ class Map
 
   def move_rocks
     metadata = @metadata.clone
+#    old_lines = @cells.reverse.map{|r| r.map{|c| Parser.render_cell(c)}.join}
+#    lines = FastUpdate.update(old_lines)
     cells = @cells.map{|r| r.map{|c|
       c.update_metadata_rocks(metadata)
       c.move_rocks
     }}
+#    cells = Parser.parse_lines(lines)
     Map.new(cells, metadata)
   end
 
