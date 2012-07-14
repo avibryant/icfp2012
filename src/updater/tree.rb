@@ -58,6 +58,12 @@ class Tree
   end
 
   def prune(n)
+# the below didn't work well but leaving it in for posterity
+#    best_score = top(1)[0][1]
+#    if(best_score && best_score > 0)
+#      n *= (1.0 / Math.log(best_score))
+#      n = n.to_i
+#    end
     pruned = {}
     top(n).each do |k,s|
       pruned[k] = @leaves[k]
