@@ -350,6 +350,18 @@ class Map
     Map.new(cells, metadata)
   end
 
+  def command_robot(command)
+    if command == "A"
+      metadata = @metadata.clone
+      metadata["Aborted"] = true
+      Map.new(cells.map{|r| r.map{|c| c.class}}, metadata)
+    elsif command == "W"
+      Map.new(cells.map{|r| r.map{|c| c.class}}, @metadata.clone)
+    else
+      move_robot(command)
+    end
+  end
+
   def score
     s = 0
     if(l = @metadata["Lambdas"])
@@ -357,6 +369,9 @@ class Map
     end
     if(@metadata["InLift"] == "true")
       s *= 3
+    end
+    if(@metadata["Aborted"] == "true")
+      s *= 2
     end
     if(m = @metadata["Moves"])
       s -= m.to_i
