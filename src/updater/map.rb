@@ -63,6 +63,9 @@ class Lift < Cell
   end
 end
 
+class OpenLift < Lift
+end
+
 class Earth < Cell
   def move_robot(direction)
     if cell_at(direction.opposite) == nil
@@ -244,6 +247,7 @@ class Parser
     "#" => Wall,
     "*" => Rock,
     "L" => Lift,
+    "O" => OpenLift,
     "." => Earth,
     "\\" => Lambda,
     " " => Empty,
