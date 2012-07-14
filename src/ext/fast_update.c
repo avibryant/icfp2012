@@ -149,6 +149,7 @@ VALUE refresh_update(VALUE output, VALUE map, VALUE state) {
   num_elems = RARRAY_LEN(rock_list);
 
   for(e = num_elems - 1; e >= 0; e--) {
+    int added_rock = 0;
     destruct(elems[e], &r, &c);
 
     if(r + 1 < num_rows) {
@@ -160,6 +161,7 @@ VALUE refresh_update(VALUE output, VALUE map, VALUE state) {
           robot_dead = Qtrue;
         }
 
+        added_rock = 1;
         rb_ary_push(new_rock_list,
                     rb_ary_new3(2, INT2FIX(r+1), INT2FIX(c)));
       }
@@ -175,6 +177,7 @@ VALUE refresh_update(VALUE output, VALUE map, VALUE state) {
             robot_dead = Qtrue;
           }
 
+          added_rock = 1;
           rb_ary_push(new_rock_list,
                       rb_ary_new3(2, INT2FIX(r+1), INT2FIX(c+1)));
         } else
@@ -188,6 +191,7 @@ VALUE refresh_update(VALUE output, VALUE map, VALUE state) {
               robot_dead = Qtrue;
             }
 
+            added_rock = 1;
             rb_ary_push(new_rock_list,
                         rb_ary_new3(2, INT2FIX(r+1), INT2FIX(c-1)));
           }
@@ -202,10 +206,15 @@ VALUE refresh_update(VALUE output, VALUE map, VALUE state) {
             robot_dead = Qtrue;
           }
 
+          added_rock = 1;
           rb_ary_push(new_rock_list,
                       rb_ary_new3(2, INT2FIX(r+1), INT2FIX(c+1)));
         }
       }
+    }
+
+    if(!added_rock) {
+      rb_ary_push(new_rock_list, rb_ary_new3(2, INT2FIX(r), INT2FIX(c)));
     }
   }
 
