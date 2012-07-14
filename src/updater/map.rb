@@ -119,7 +119,7 @@ class Earth < Cell
 end
 
 class Lambda < Cell
-  VALUE = 99
+  VALUE = 25
 
   def move_robot(direction)
     if cell_at(direction.opposite) == nil
@@ -500,5 +500,9 @@ class Map
 
   def is_done?
     @metadata["InLift"] || @metadata["Aborted"] || @metadata["Dead"]
+  end
+
+  def lambdas
+    @metadata["Lambdas"]
   end
 end

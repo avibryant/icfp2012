@@ -100,6 +100,7 @@ iterations.times do |i|
   moves, score = tree.top(1)[0]
   puts "Best score: #{score}"
   puts "Best moves: #{moves}"
+  puts "Best lambdas: #{tree.leaves[moves].lambdas}"
   puts "Move robot time: #{tree.move_robot_time}"
   puts "Move rocks time: #{tree.move_rocks_time}"
   puts "Extra iterate time: #{iterate_time - tree.move_robot_time - tree.move_rocks_time}"
