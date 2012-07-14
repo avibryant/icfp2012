@@ -9,12 +9,17 @@ class MonteCarloTree
     @scores = Hash.new(0)
     @squared_scores = Hash.new(0)
     @counts = Hash.new(0)
-    @start_time = Time.new.to_f
+    @recent_counts = Hash.new(0)
+    @last_dump = @start_time = Time.new.to_f
     @best = root
   end
 
   def time_elapsed
     Time.new.to_f - @start_time
+  end
+
+  def time_since_last_dump
+    Time.new.to_f - @last_dump
   end
 
   def iterate(max_depth)
@@ -45,18 +50,24 @@ class MonteCarloTree
       @counts[parent_moves] += 1
       @scores[parent_moves] += best.abort_score
       @squared_scores[parent_moves] += (best.abort_score * best.abort_score)
+      @recent_counts[parent_moves] += 1
     end
     @counts[""] += 1
     @scores[""] += best.abort_score
     @squared_scores[""] += (best.abort_score * best.abort_score)
+
+    if time_since_last_dump > 1
+      dump
+    end
   end
 
   def move(map)
-    if rand < 0.05
-      map.move("W")
+    if rand < 0.5
+      map.move(MOVES[rand(MOVES.size)])
     else
-      m = MOVES[rand(MOVES.size - 1)]
-      map.move(m)
+      nt = map.nearest_target
+      dir = map.direction_to(nt)
+      map.move(dir)
     end
   end
 
@@ -80,7 +91,7 @@ class MonteCarloTree
   end
 
   C = 0.5
-  D = 1000.0
+  D = 100000.0
 
   def best_child(map)
     scores = children(map.moves).shuffle.map do |moves|
@@ -108,11 +119,19 @@ class MonteCarloTree
   end
 
   def dump
+    @last_dump = Time.new.to_f
     puts
     puts "Best score: #{@best.score}"
     puts "Best moves: #{@best.moves}"
     puts "Tree size: #{@maps.size}"
     puts "Time elapsed: #{time_elapsed}"
+    if @recent_counts.size > 5
+      puts "Top moves:"
+      @recent_counts.keys.sort.sort{|a,b| @recent_counts[a] <=> @recent_counts[b]}[-5..-1].each do |moves|
+        puts "  #{@recent_counts[moves]} #{moves}"
+      end
+    end
+    @recent_counts = Hash.new(0)
   end
 end
 
