@@ -69,6 +69,10 @@ class Cell
       0
     end
   end
+
+  def underwater?
+    @map.metadata["Water"].to_i > y
+  end
 end
 
 class Wall < Cell
@@ -103,7 +107,11 @@ class Lift < Cell
   end
 
   def get_heatmap_value(current, distance, entropy)
-    @map.lambdas_gone ? VALUE : -1
+    if @map.lambdas_gone && !underwater?
+      VALUE
+    else
+      -1
+    end
   end
 end
 
@@ -148,7 +156,7 @@ class Lambda < Cell
   end
 
   def get_heatmap_value(current, distance, entropy)
-    @value = VALUE
+    underwater? ? -1 : VALUE
   end
 end
 
@@ -258,6 +266,24 @@ class Robot < Cell
         metadata["Dead"] = true
       end
     end
+
+    flood_rate = metadata["Flooding"].to_i
+    if flood_rate > 0
+      water_level = (metadata["Moves"] / flood_rate) + 1
+      metadata["Water"] = water_level
+      if underwater?
+        metadata["TimeUnderWater"] += 1
+      else
+        metadata["TimeUnderWater"] = 0
+      end
+
+      if metadata["TimeUnderWater"] > metadata["Waterproof"].to_i
+        metadata["Dead"] = true
+      end
+    end
+  end
+
+  def update_metadata_water(metadata)
   end
 
   def update_initial_metadata(metadata)
@@ -375,7 +401,15 @@ class Map
     "L" => Left,
     "D" => Down,
     "R" => Right
-  }
+  }.freeze
+
+  DEFAULT_METADATA = {
+    "Water" => 0,
+    "Flooding" => 0,
+    "Waterproof" => 10,
+    "TimeUnderWater" => 0,
+    "HeatMap" => {}
+  }.freeze
 
   HIDDEN_METADATA = ["HeatMap"]
 
@@ -385,9 +419,9 @@ class Map
     Parser.parse(string)
   end
 
-  def initialize(rows, metadata = {})
+  def initialize(rows, metadata=nil)
+    @metadata = DEFAULT_METADATA.clone.merge(metadata)
     @width = rows[0].size
-    @metadata = metadata.clone
     @cells = (0...rows.size).map do |y|
       line = rows[y]
       (0...line.size).map do |x|
@@ -414,6 +448,7 @@ class Map
 
   def move_rocks
     metadata = @metadata.clone
+
     if ENV["FAST"]
       old_lines = @cells.reverse.map{|r| r.map{|c| Parser.render_cell(c)}.join}
       t1 = Time.new.to_f
