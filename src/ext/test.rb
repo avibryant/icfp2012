@@ -2,8 +2,10 @@ require 'fast_update'
 require 'test/unit'
 
 class TestFastUpdate < Test::Unit::TestCase
-  def assert_update(from, to)
-    assert_equal to, FastUpdate.update(from)
+  def assert_update(from, to, robot = 0)
+    t, r = FastUpdate.update(from)
+    assert_equal to, t
+    assert_equal robot, r
   end
 
   def test_simple_rock_drop
@@ -40,6 +42,27 @@ class TestFastUpdate < Test::Unit::TestCase
     assert_update \
       ["L "],
       ["O "]
+  end
+
+  def test_falling_rocks_kill_robots
+    assert_update \
+      ["* ", "  ", "R "],
+      ["  ", "* ", "R "],
+      1
+  end
+
+ def test_left_rocks_kill_robots
+    assert_update \
+      [" *"," *", "R "],
+      ["  ", "* ", "R*"],
+      1
+  end
+
+ def test_right_rocks_kill_robots
+    assert_update \
+      ["* ", "* ", " R"],
+      ["  ", " *", "*R"],
+      1
   end
 end
 
