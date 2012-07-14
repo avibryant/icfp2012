@@ -504,7 +504,7 @@ class Map
     Parser.parse(string)
   end
 
-  def initialize(rows, metadata=nil)
+  def initialize(rows, metadata=nil, moves="")
     @metadata = DEFAULT_METADATA.clone.merge(metadata)
     @width = rows[0].size
     @cells = (0...rows.size).map do |y|
@@ -518,6 +518,7 @@ class Map
       end
     end
     @height = @cells.size
+    @moves = moves
   end
 
   def lambdas_gone
@@ -556,7 +557,7 @@ class Map
       }}
       $time += (Time.new.to_f - t1)
     end
-    Map.new(cells, metadata)
+    Map.new(cells, metadata, moves)
   end
 
   def move_robot(direction)
@@ -584,7 +585,7 @@ class Map
       metadata["HeatMap"] = {}
     end
 
-    Map.new(cells, metadata)
+    Map.new(cells, metadata, moves + direction)
   end
 
   # This is a simple heatmap scoring algorithm; it initializes each cell to either
@@ -617,14 +618,18 @@ class Map
       metadata = @metadata.clone
       metadata["Aborted"] = true
       metadata["Moves"] = (metadata["Moves"] || 0).to_i + 1
-      Map.new(cells.map{|r| r.map{|c| [c.char, c.class] }}, metadata)
+      Map.new(cells.map{|r| r.map{|c| [c.char, c.class] }}, metadata, moves + command)
     elsif command == "W"
       metadata = @metadata.clone
       metadata["Moves"] = (metadata["Moves"] || 0).to_i + 1
-      Map.new(cells.map{|r| r.map{|c| [c.char, c.class] }}, metadata)
+      Map.new(cells.map{|r| r.map{|c| [c.char, c.class] }}, metadata, moves + command)
     else
       move_robot(command)
     end
+  end
+
+  def move(move)
+    command_robot(move).move_rocks
   end
 
   def robot_value
@@ -655,11 +660,23 @@ class Map
     s
   end
 
+  def abort_score
+    if is_done?
+      score
+    else
+      move("A").score
+    end
+  end
+
   def is_done?
     @metadata["InLift"] || @metadata["Aborted"] || @metadata["Dead"]
   end
 
   def lambdas
     @metadata["Lambdas"]
+  end
+
+  def moves
+    @moves
   end
 end
