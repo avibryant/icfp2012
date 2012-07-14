@@ -71,6 +71,10 @@ class Cell
   def underwater?
     @map.metadata["Water"].to_i > y
   end
+
+  def to_s
+    "#{self.class}@(#{x},#{y})"
+  end
 end
 
 class Wall < Cell
@@ -80,8 +84,6 @@ class Wall < Cell
 end
 
 class Lift < Cell
-  VALUE = 99
-
   def move_robot(direction)
     if !@map.lambdas_gone
       Lift
@@ -95,8 +97,12 @@ class Lift < Cell
   end
 
   def update_metadata(direction, metadata)
-    if @map.lambdas_gone && (Robot === cell_at(direction.opposite))
-      metadata["InLift"] = true
+    if @map.lambdas_gone
+      metadata["Replacements"] << [[x, y], [nil, OpenLift]]
+
+      if Robot === cell_at(direction.opposite)
+        metadata["InLift"] = true
+      end
     end
   end
 
@@ -105,15 +111,16 @@ class Lift < Cell
   end
 
   def get_heatmap_value(current, distance)
-    if @map.lambdas_gone && !underwater?
-      VALUE
-    else
-      -1
-    end
+    -1
   end
 end
 
 class OpenLift < Lift
+  VALUE = 99
+
+  def get_heatmap_value(current, distance)
+    if underwater? then -1 else VALUE end
+  end
 end
 
 class Earth < Cell
@@ -154,7 +161,7 @@ class Lambda < Cell
   end
 
   def get_heatmap_value(current, distance)
-    underwater? ? -1 : VALUE
+    if underwater? then -1 else VALUE end
   end
 end
 
