@@ -428,6 +428,7 @@ class Map
 
   def move_robot(direction)
     metadata = @metadata.clone
+    previous_lambdas = metadata["LambdasLeft"]
     metadata["LambdasLeft"] = 0
     metadata["LambdaPositions"] = Set.new
     metadata["LiftPositions"] = Set.new
@@ -436,6 +437,9 @@ class Map
         c.update_metadata(dir, metadata)
         c.move_robot(dir)
     }}
+    if previous_lambdas != metadata["LambdasLeft"]
+      metadata["HeatMap"] = {}
+    end
     Map.new(cells, metadata)
   end
 
