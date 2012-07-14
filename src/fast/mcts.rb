@@ -23,7 +23,7 @@ class MonteCarloTree
 
     depth = 0
     until map.done? || depth > max_depth
-      map = map.move(pick_move)
+      map = map.move(pick_move(MOVES))
       if map.abort_score > best.abort_score
         best = map
       end
@@ -51,8 +51,12 @@ class MonteCarloTree
     @squared_scores[""] += (best.abort_score * best.abort_score)
   end
 
-  def pick_move
-    MOVES[rand(MOVES.size)]
+  def pick_move(moves)
+    if(rand < 0.05 && moves.include?("W"))
+      "W"
+    else
+      (moves - ["W"])[rand(moves.size - 1)]
+    end
   end
 
   def pick_map(map)
