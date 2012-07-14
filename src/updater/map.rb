@@ -336,13 +336,16 @@ class Map
 
   def move_rocks
     metadata = @metadata.clone
-#    old_lines = @cells.reverse.map{|r| r.map{|c| Parser.render_cell(c)}.join}
-#    lines = FastUpdate.update(old_lines)
-    cells = @cells.map{|r| r.map{|c|
+    if ENV["FAST"]
+      old_lines = @cells.reverse.map{|r| r.map{|c| Parser.render_cell(c)}.join}
+      lines = FastUpdate.update(old_lines)
+      cells = Parser.parse_lines(lines)
+    else
+     cells = @cells.map{|r| r.map{|c|
       c.update_metadata_rocks(metadata)
       c.move_rocks
-    }}
-#    cells = Parser.parse_lines(lines)
+      }}
+    end
     Map.new(cells, metadata)
   end
 
