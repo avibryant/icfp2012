@@ -371,10 +371,10 @@ class Map
     if(l = @metadata["Lambdas"])
       s += l.to_i * 25
     end
-    if(@metadata["InLift"] == "true")
+    if(@metadata["InLift"])
       s *= 3
     end
-    if(@metadata["Aborted"] == "true")
+    if(@metadata["Aborted"])
       s *= 2
     end
     if(m = @metadata["Moves"])
