@@ -34,7 +34,7 @@ def available_moves_from(cell)
   avail_moves = DIRECTIONS.dup
   avail_moves.delete(Down) if Rock === cell.above
   move_values = avail_moves.zip(avail_moves.map {|d| cell.cell_at(d).value })
-  move_values.reject {|p| p[1] < 0 }.sort_by {|p| -p[1] }
+  move_values.sort_by {|p| -p[1] } #.reject {|p| p[1] < 0 }
 end
 
 begin
@@ -43,8 +43,15 @@ while !map.is_done?
   map.score_cells!
   puts map
   puts commands.join
-  position = map.metadata["RobotPosition"]
+
+  metadata = map.metadata
+
+  position = metadata["RobotPosition"]
   robot = map[*position]
+
+  if robot.underwater? && metadata["TimeUnderWater"] >= (metadata["Waterproof"].to_i - 1)
+    raise Abort, "going to drown"
+  end
 
   move_values = available_moves_from(robot)
   raise Abort, "no valid moves" if move_values.empty?
@@ -56,6 +63,7 @@ while !map.is_done?
     map.score_cells!(1)
     map.score_cells!
     move_values = available_moves_from(robot)
+    raise Abort, "no valid moves" if move_values.empty?
     best_move, best_score = move_values[0]
   end
 
