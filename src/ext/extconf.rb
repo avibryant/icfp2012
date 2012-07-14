@@ -1,5 +1,5 @@
 require 'mkmf'
 
-$CFLAGS << " -O0"
+$CFLAGS.gsub!(/-O\d/,"-O0") if ENV['DEBUG']
 
 create_makefile "fast_update"
