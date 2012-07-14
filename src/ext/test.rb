@@ -115,3 +115,134 @@ class TestUltraUpdate < Test::Unit::TestCase
   end
 end
 
+class TestFastUpdateMove < Test::Unit::TestCase
+  def assert_move(row, col, dir, np, from, to)
+    m, lambdas, pos = FastUpdate.move(from, row, col, dir)
+    assert_equal to, m
+    assert_equal np, pos
+  end
+
+  LEFT = 0
+  RIGHT = 1
+  UP = 2
+  DOWN = 3
+
+  def test_left
+    assert_move 0, 1, LEFT, [0,0],
+      [" R"],
+      ["R "]
+  end
+
+  def test_ignores_left_into_rock
+    assert_move 0, 1, LEFT, [0,1],
+      ["*R"],
+      ["*R"]
+  end
+
+  def test_right
+    assert_move 0, 0, RIGHT, [0,1],
+      ["R "],
+      [" R"]
+  end
+
+  def test_ignores_right_into_rock
+    assert_move 0, 1, RIGHT, [0,1],
+      ["*R*"],
+      ["*R*"]
+  end
+
+  def test_up
+    assert_move 1, 1, UP, [0,1],
+      ["  ", " R"],
+      [" R", "  "]
+  end
+
+  def test_ignores_up_into_rock
+    assert_move 1, 1, UP, [1,1],
+      [" *", " R"],
+      [" *", " R"]
+  end
+
+  def test_down
+    assert_move 0, 1, DOWN, [1,1],
+      [" R", "  "],
+      ["  ", " R"]
+  end
+
+  def test_ignores_down_into_rock
+    assert_move 0, 1, DOWN, [0,1],
+      [" R", " *"],
+      [" R", " *"]
+  end
+
+  def test_left_moves_rock
+    assert_move 0, 2, LEFT, [0,1],
+      [" *R"],
+      ["*R "]
+  end
+
+  def test_right_moves_rock
+    assert_move 0, 0, RIGHT, [0,1],
+      ["R* "],
+      [" R*"]
+  end
+
+  def test_counts_lambdas_captured
+    from = ['\R']
+    to =   ['R ']
+
+    m, lambdas, np = FastUpdate.move(from, 0, 1, LEFT)
+    assert_equal 1, lambdas
+  end
+
+  def test_ignores_close_lift
+    assert_move 0, 0, RIGHT, [0,0],
+      ["RL"],
+      ["RL"]
+  end
+
+  def test_move_left_into_open_lift
+    from = ["RO"]
+    to =   [" R"]
+
+    m, lambdas, np = FastUpdate.move(from, 0, 0, RIGHT)
+
+    assert_equal to, m
+    assert_equal -1, lambdas
+    assert_equal [0,1], np
+  end
+
+  def test_move_right_into_open_lift
+    from = ["OR"]
+    to =   ["R "]
+
+    m, lambdas, np = FastUpdate.move(from, 0, 1, LEFT)
+
+    assert_equal to, m
+    assert_equal -1, lambdas
+    assert_equal [0,0], np
+  end
+
+  def test_move_up_into_open_lift
+    from = ["O ", "R "]
+    to =   ["R ", "  "]
+
+    m, lambdas, np = FastUpdate.move(from, 1, 0, UP)
+
+    assert_equal to, m
+    assert_equal -1, lambdas
+    assert_equal [0,0], np
+  end
+
+  def test_move_down_into_open_lift
+    from = ["R ", "O "]
+    to =   ["  ", "R "]
+
+    m, lambdas, np = FastUpdate.move(from, 0, 0, DOWN)
+
+    assert_equal to, m
+    assert_equal -1, lambdas
+    assert_equal [1,0], np
+  end
+end
+
