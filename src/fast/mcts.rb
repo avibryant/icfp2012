@@ -52,10 +52,15 @@ class MonteCarloTree
   end
 
   def pick_move(moves)
-    if(rand < 0.05 && moves.include?("W"))
+    if(rand < 0.1 && moves.include?("W"))
       "W"
     else
-      (moves - ["W"])[rand(moves.size - 1)]
+      nw = moves - ["W"]
+      if(nw.empty?)
+        "W"
+      else
+        nw[rand(nw.size)]
+      end
     end
   end
 
@@ -72,7 +77,7 @@ class MonteCarloTree
   end
 
   def expand(map, moves)
-    move = moves[rand(moves.size)]
+    move = pick_move(moves)
     next_map = map.move(move)
     @maps[next_map.moves] = next_map
     next_map
