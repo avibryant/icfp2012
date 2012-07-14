@@ -1,6 +1,8 @@
 require 'map'
+require 'greedy'
 
 class MonteCarloTree
+  MAX_DEPTH = 100
   MOVES = ["L", "R", "U", "D", "W"]
 
   def initialize(root)
@@ -22,18 +24,9 @@ class MonteCarloTree
     Time.new.to_f - @last_dump
   end
 
-  def iterate(max_depth)
+  def iterate
     map = pick_map(@root)
-    best = map
-
-    depth = 0
-    until map.is_done? || depth > max_depth
-      map = move(map)
-      if map.abort_score > best.abort_score
-        best = map
-      end
-      depth += 1
-    end
+    best = simulate(map)    
 
     if best.abort_score > @best.score
         if best.is_done?
@@ -61,6 +54,24 @@ class MonteCarloTree
     end
   end
 
+  def simulate(map)
+    greedy(map)
+  end
+
+  def simulate_random(map)
+    best = map
+
+    depth = 0
+    until map.is_done? || depth > MAX_DEPTH
+      map = move(map)
+      if map.abort_score > best.abort_score
+        best = map
+      end
+      depth += 1
+    end
+    best
+  end
+
   def move(map)
     map.move(MOVES[rand(MOVES.size)])
   end
@@ -85,7 +96,7 @@ class MonteCarloTree
   end
 
   C = 0.5
-  D = 100000.0
+  D = 1000.0
 
   def best_child(map)
     scores = children(map.moves).shuffle.map do |moves|
@@ -124,9 +135,8 @@ end
 
 map = Map.parse(STDIN.read)
 tree = MonteCarloTree.new(map)
-max_depth = ARGV.shift.to_i
 max_time = ARGV.shift.to_i
 
 while tree.time_elapsed < max_time
-  tree.iterate(max_depth)
+  tree.iterate
 end
