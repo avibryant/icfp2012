@@ -45,7 +45,7 @@ VALUE update(VALUE self, VALUE map) {
   int row_length, r, c;
   int lambdas = 0;
   int lift_r = -1, lift_c = -1;
-  int robot_dead = 0;
+  VALUE robot_dead = Qfalse;
 
   for(r = 0; r < num_rows; r++) {
     rb_ary_store(output, r, Qnil);
@@ -64,7 +64,7 @@ VALUE update(VALUE self, VALUE map) {
             set(map, output, r+1, c, '*');
             set(map, output, r,   c, ' ');
             if(r+2 < num_rows && str_at(rows[r+2], c) == 'R')
-              robot_dead = 1;
+              robot_dead = Qtrue;
           }
 
           if(str_at(rows[r+1], c) == '*') {
@@ -74,7 +74,7 @@ VALUE update(VALUE self, VALUE map) {
               set(map, output, r+1, c+1, '*');
               set(map, output, r,   c,   ' ');
               if(r+2 < num_rows && str_at(rows[r+2], c+1) == 'R')
-                robot_dead = 1;
+                robot_dead = Qtrue;
             } else
               if(c-1 >= 0 &&
                     str_at(rows[r],   c-1) == ' ' &&
@@ -82,7 +82,7 @@ VALUE update(VALUE self, VALUE map) {
                 set(map, output, r+1, c-1, '*');
                 set(map, output, r,   c,   ' ');
                 if(r+2 < num_rows && str_at(rows[r+2], c-1) == 'R')
-                  robot_dead = 1;
+                  robot_dead = Qtrue;
               }
           } else if(str_at(rows[r+1], c) == '\\') {
             if(c+1 < row_length &&
@@ -91,7 +91,7 @@ VALUE update(VALUE self, VALUE map) {
               set(map, output, r+1, c+1, '*');
               set(map, output, r,   c,   ' ');
               if(r+2 < num_rows && str_at(rows[r+2], c+1) == 'R')
-                robot_dead = 1;
+                robot_dead = Qtrue;
             }
           }
         }
@@ -113,7 +113,7 @@ VALUE update(VALUE self, VALUE map) {
 
   fill_unchanged(map, output);
 
-  return rb_ary_new3(2, output, INT2FIX(robot_dead));
+  return rb_ary_new3(2, output, robot_dead);
 }
 
 void destruct(VALUE array, int* x, int* y) {

@@ -42,7 +42,7 @@ class FastMap
       moves = 1
     end
     lines2, dead = FastUpdate.update(lines)
-    self.class.new(lines2, @moves + moves, @lambdas + lambdas, robot, lift, dead>0, aborted)
+    self.class.new(lines2, @moves + moves, @lambdas + lambdas, robot, lift, dead, aborted)
   end
 
   def find(char)
