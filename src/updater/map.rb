@@ -370,7 +370,7 @@ class Map
   end
 
   def lambdas_gone
-    @metadata["LambdasLeft"].to_i == 0
+    @metadata["LambdasLeft"].to_s == "0"
   end
 
   def [](x,y)
