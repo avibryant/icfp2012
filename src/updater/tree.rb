@@ -26,22 +26,24 @@ class Tree
   def top(n)
     scores = {}
     @leaves.each do |moves, leaf|
-      scores[moves] = leaf.score
+      scores[moves] = [leaf.score, -leaf.robot_distance_to_closest_lambda]
     end
 
-    sorted_moves = scores.keys.shuffle.sort{|a,b| scores[a] <=> scores[b]}
+    sorted_moves = scores.keys.shuffle.sort{|a,b| scores[a][0] + scores[a][1]*2 <=> scores[b][0] + scores[b][1]*2}
     best_done = sorted_moves.reverse.find{|m| @leaves[m].is_done?}
     sorted_moves = sorted_moves.reject{|m| @leaves[m].is_done? && m != best_done}
     if(sorted_moves.size> n)
       sorted_moves = sorted_moves[-1 * n .. -1]
     end
-    sorted_moves.map{|m| [m, scores[m]]}
+    sorted_moves.map{|m| [m, scores[m]]}.reverse
   end
 
   def prune(n)
     pruned = {}
-    top(n).each do |k,s|
-      pruned[k] = @leaves[k]
+    i = 0
+    top(11 * n).each do |k,s|
+      pruned[k] = @leaves[k] if (i < n) || (rand(10) == 0)
+      i += 1
     end
     @leaves = pruned
   end 
@@ -69,6 +71,7 @@ iterations.times do |i|
   puts "Iteration #{i+1}"
   puts "Leaves: #{tree.leaves.size}"
   moves, score = tree.top(1)[0]
-  puts "Best score: #{score}"
+  puts "Best score: #{score[0]}"
+  puts score[1]
   puts "Best moves: #{moves}"
 end

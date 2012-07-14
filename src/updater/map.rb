@@ -3,6 +3,14 @@ class Cell
     @map, @x, @y = map, x, y
   end
 
+  def x
+    @x
+  end
+
+  def y
+    @y
+  end
+
   def below
     @map[@x, @y - 1]
   end
@@ -87,6 +95,7 @@ class Lambda < Cell
   def update_metadata(direction, metadata)
     if(Robot === cell_at(direction.opposite))
       metadata["Lambdas"] = (metadata["Lambdas"] || 0).to_i + 1
+      metadata["HeatMap"] = nil
     else
       metadata["LambdasLeft"] = (metadata["LambdasLeft"] || 0).to_i + 1
     end
@@ -178,7 +187,7 @@ class Robot < Cell
       Robot
     elsif (Rock === above.above && above.above.moving_down) || (Rock === above.above.left && above.above.left.moving_down_right) ||
       (Rock === above.above.right && above.above.right.moving_down_left)
-      Earth
+      Robot
     else
       Robot
     end
@@ -277,7 +286,7 @@ class Parser
   def self.render(map)
     map.cells.reverse.map{|r| r.map{|c| render_cell(c)}.join}.join("\n") + 
     "\n\n" +
-    map.metadata.map{|k,v| k + " " + v.to_s}.join("\n") +
+    map.metadata.select{|k,v| v != nil}.map{|k,v| k + " " + v.to_s}.join("\n") +
     "\nScore " + map.score.to_s
   end
 
@@ -319,6 +328,75 @@ class Map
     @metadata["LambdasLeft"].to_i == 0
   end
 
+  def robot_distance_to_closest_lambda
+    @cells.each do |r|
+      r.each do |c|
+        @robot = c if Robot === c
+      end
+    end
+    md = heat_map[@robot.y][@robot.x]
+    md == 10000 ? 0 : md
+  end
+
+  def heat_map
+    return @heat_map if @heat_map != nil
+    if @metadata["HeatMap"] != nil
+      out = []
+      row = []
+      @metadata["HeatMap"].split(",").each_with_index do |c, i|
+        row = [] if i % width == 0
+        row << c.to_i
+        out << row if i % width == width - 1
+      end
+      return out
+    end
+    lambda_heat_map = @cells.map do |r|
+      r.map do |c|
+        Lambda === c ? 0 : 10000
+      end
+    end
+    lift_heat_map = @cells.map do |r|
+      r.map do |c|
+        Lift === c ? 0 : 10000
+      end
+    end
+    while (lambda_heat_map != (heat_map_temp = next_heat_map(lambda_heat_map)))
+      lambda_heat_map = heat_map_temp
+    end
+
+    while (lift_heat_map != (heat_map_temp = next_heat_map(lift_heat_map)))
+      lift_heat_map = heat_map_temp
+    end
+
+    if lambda_heat_map.map{|r| r.min}.min == 10000
+      @heat_map = lift_heat_map
+    else
+      @heat_map = lambda_heat_map
+    end
+
+    @heat_map
+  end
+
+  def next_heat_map(hm)
+    out = []
+    hm.each_with_index do |r, y|
+      row = []
+      r.each_with_index do |c, x|
+        options = [c]
+        penalty = Rock === self[x,y] ? 3 : 1
+        if !(Wall === self[x, y])
+          options << hm[y][x - 1] + penalty if (x > 0)
+          options << hm[y][x + 1] + penalty if (x + 1 < width)
+          options << hm[y - 1][x] + penalty if (y > 0)
+          options << hm[y + 1][x] + penalty if (y + 1 < height)
+        end
+        row << options.min
+      end
+      out << row
+    end
+    out
+  end
+
   def [](x,y)
     return nil if @cells[y] == nil
     @cells[y][x]
@@ -341,8 +419,13 @@ class Map
     @cells.size
   end
 
+  def width
+    @cells[0].size
+  end
+
   def move_robot(direction)
     metadata = @metadata.clone
+    metadata['HeatMap'] = heat_map.flatten.join(",")
     metadata['LambdasLeft'] = 0
     cells = @cells.map{|r| r.map{|c|
         dir = DIRECTION_CLASSES[direction]
@@ -355,11 +438,13 @@ class Map
   def command_robot(command)
     if command == "A"
       metadata = @metadata.clone
+      metadata['HeatMap'] = heat_map.flatten.join(",")
       metadata["Aborted"] = true
       metadata["Moves"] = (metadata["Moves"] || 0).to_i + 1
       Map.new(cells.map{|r| r.map{|c| c.class}}, metadata)
     elsif command == "W"
       metadata = @metadata.clone
+      metadata['HeatMap'] = heat_map.flatten.join(",")
       metadata["Moves"] = (metadata["Moves"] || 0).to_i + 1
       Map.new(cells.map{|r| r.map{|c| c.class}}, metadata)
     else
