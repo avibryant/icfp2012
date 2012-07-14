@@ -1,4 +1,4 @@
-require 'map'
+require '../fast/map'
 
 class MonteCarloTree
   MOVES = ["L", "R", "U", "D", "W"]
