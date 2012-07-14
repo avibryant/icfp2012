@@ -277,7 +277,8 @@ class Parser
   def self.render(map)
     map.cells.reverse.map{|r| r.map{|c| render_cell(c)}.join}.join("\n") + 
     "\n\n" +
-    map.metadata.map{|k,v| k + " " + v.to_s}.join("\n")
+    map.metadata.map{|k,v| k + " " + v.to_s}.join("\n") +
+    "\nScore " + map.score.to_s
   end
 
   def self.render_cell(cell)
@@ -311,11 +312,11 @@ class Map
         line[x].new(self, x, y)
       end
     end
-    @metadata = metadata
+    @metadata = metadata.clone
   end
 
   def lambdas_gone
-    @metadata["LambdasLeft"] == "0"
+    @metadata["LambdasLeft"].to_i == 0
   end
 
   def [](x,y)
