@@ -33,6 +33,9 @@ class Cell
 
   def update_metadata(direction, metadata)
   end
+
+  def update_metadata_rocks(metadata)
+  end
 end
 
 class Wall < Cell
@@ -184,6 +187,15 @@ class Robot < Cell
   def update_metadata(direction, metadata)
     metadata["Moves"] = (metadata["Moves"] || 0).to_i + 1
   end
+
+  def update_metadata_rocks(metadata)
+    if above != nil && above.above != nil
+      if (Rock === above.above && above.above.moving_down) || (Rock === above.above.left && above.above.left.moving_down_right) ||
+        (Rock === above.above.right && above.above.right.moving_down_left)
+        metadata["Dead"] = true
+      end
+    end
+  end
 end
 
 class Direction
@@ -316,7 +328,12 @@ class Map
   end
 
   def move_rocks
-    Map.new(@cells.map{|r| r.map{|c| c.move_rocks}}, @metadata)
+    metadata = @metadata.clone
+    cells = @cells.map{|r| r.map{|c|
+      c.update_metadata_rocks(metadata)
+      c.move_rocks
+    }}
+    Map.new(cells, metadata)
   end
 
   def height
@@ -334,6 +351,18 @@ class Map
     Map.new(cells, metadata)
   end
 
+  def command_robot(command)
+    if command == "A"
+      metadata = @metadata.clone
+      metadata["Aborted"] = true
+      Map.new(cells.map{|r| r.map{|c| c.class}}, metadata)
+    elsif command == "W"
+      Map.new(cells.map{|r| r.map{|c| c.class}}, @metadata.clone)
+    else
+      move_robot(command)
+    end
+  end
+
   def score
     s = 0
     if(l = @metadata["Lambdas"])
@@ -341,6 +370,9 @@ class Map
     end
     if(@metadata["InLift"] == "true")
       s *= 3
+    end
+    if(@metadata["Aborted"] == "true")
+      s *= 2
     end
     if(m = @metadata["Moves"])
       s -= m.to_i

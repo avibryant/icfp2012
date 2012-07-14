@@ -1,7 +1,7 @@
 require 'map'
 
 class Tree
-  DIRECTIONS = ["U", "D", "L", "R"]
+  DIRECTIONS = ["U", "D", "L", "R", "W", "A"]
 
   attr_reader :leaves
 
@@ -11,9 +11,9 @@ class Tree
 
   def iterate
     new_leaves = {}
-    @leaves.each do |moves, leaf|
+    @leaves.select{ |moves, leaf| moves[-1 .. -1] != "A" && moves[-2 .. -1] != "WW"}.each do |moves, leaf|
       DIRECTIONS.each do |dir|
-        new_leaves[moves + dir] = leaf.move_robot(dir).move_rocks
+        new_leaves[moves + dir] = leaf.command_robot(dir).move_rocks
       end
     end
     @leaves = new_leaves
