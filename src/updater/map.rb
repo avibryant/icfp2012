@@ -355,9 +355,12 @@ class Map
     if command == "A"
       metadata = @metadata.clone
       metadata["Aborted"] = true
+      metadata["Moves"] = (metadata["Moves"] || 0).to_i + 1
       Map.new(cells.map{|r| r.map{|c| c.class}}, metadata)
     elsif command == "W"
-      Map.new(cells.map{|r| r.map{|c| c.class}}, @metadata.clone)
+      metadata = @metadata.clone
+      metadata["Moves"] = (metadata["Moves"] || 0).to_i + 1
+      Map.new(cells.map{|r| r.map{|c| c.class}}, metadata)
     else
       move_robot(command)
     end
