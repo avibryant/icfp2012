@@ -6,21 +6,31 @@ DIRECTION_COMMANDS = Map::DIRECTION_CLASSES.invert
 map = Map.parse(STDIN.read)
 
 commands = []
-position = nil
+last_position = nil
 
-while !(map.is_done? || position == map.metadata["RobotPosition"])
+while !map.is_done?
+  puts "---"
   map.score_cells!
-  puts "Move ##{commands.size}"
   puts map
   puts commands.join
   position = map.metadata["RobotPosition"]
   robot = map[*position]
-  move_values = DIRECTIONS.zip(DIRECTIONS.map {|d| robot.cell_at(d).value })
+  avail_moves = DIRECTIONS.dup
+  # one special rule: don't move down with a rock overhead
+  p [robot.above.class, robot.right.class, robot.below.class, robot.left.class]
+  avail_moves.delete(Down) if Rock === robot.above
+  p avail_moves
+  move_values = avail_moves.zip(avail_moves.map {|d| robot.cell_at(d).value })
   best_move = move_values.sort_by {|p| p[1] }.last[0]
   command = DIRECTION_COMMANDS[best_move]
   map = map.command_robot(command).move_rocks
-  commands << command
-  puts "---"
+  if position == last_position
+    commands << "A"
+    break
+  else
+    commands << command
+    last_position = position
+  end
 end
 
 puts "!!!"
