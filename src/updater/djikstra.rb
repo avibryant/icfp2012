@@ -2,14 +2,22 @@ require 'set'
 require 'map'
 
 class Djikstra
+  attr_accessor :distance, :map
+
   def initialize(map, dest)
     @map = map.clone
     @destination = dest.clone
     @unvisited = Set.new
-    0.upto(map.height - 1).each{|i| 0.upto(map.width - 1).each{|j| @unvisited << [i,j]}}
-    @distance = map.height.times.map{ map.width.times.map{ 1e6 } }
+
+    @distance = (0...map.height).map do |y|
+      (0...map.width).map do |x|
+        @unvisited << [x, y]
+        1e6
+      end
+    end
+
     @unvisited.delete(dest)
-    @distance[dest[0]][dest[1]] = 0
+    @distance[dest[1]][dest[0]] = 0
   end
 
   def best_unvisited
@@ -29,21 +37,21 @@ class Djikstra
   def shortest_path
     current_node = @destination.clone
     until @unvisited.empty?
-      cur_class = @map[current_node[0], current_node[1]].class
+      break if current_node.nil?
+      cur_class = @map.cells[current_node[0]][current_node[1]].class
       cur_score = @distance[current_node[0]][current_node[1]]
-
       if cur_class == Wall || cur_class == Rock || cur_class == Lift
         @unvisited.delete(current_node)
         current_node = best_unvisited
         next
       end
 
-      [[-1,0], [1,0], [0,-1], [0,1]].each do |x,y|
+      [[-1,0], [1,0], [0,-1], [0,1]].each do |y,x|
         next_x = current_node[0] + x
         next_y = current_node[1] + y
-        if next_x >=0 && next_y >= 0 && @unvisited.include?([next_x, next_y])
-          next_class = @map[next_x, next_y].class
-          if next_class == Earth || next_class == Lambda || next_class == Empty || next_class == OpenLift
+        if next_x >=0 && next_y >= 0 && next_x < @map.height && next_y < @map.width && @unvisited.include?([next_x, next_y])
+          next_class = @map.cells[next_x][next_y].class
+          if next_class == Earth || next_class == Robot || next_class == Lambda || next_class == Empty || next_class == OpenLift
             score1 = cur_score + 1
             score2 = @distance[next_x][next_y]
             new_score = [score1, score2].min
@@ -53,6 +61,7 @@ class Djikstra
       end
       @unvisited.delete(current_node)
       current_node = best_unvisited
+      break if current_node.nil?
     end
     @distance
   end
@@ -60,7 +69,12 @@ end
 
 if __FILE__== $0
   map = Map.parse(STDIN.read)
-  d = Djikstra.new(map, [4,4])
+  map.score_cells!
+  puts map.to_s
+  x = ARGV.shift.to_i
+  y = ARGV.shift.to_i
+  puts map[x, y]
+  d = Djikstra.new(map, [x,y])
   paths = d.shortest_path
   paths.reverse.each do |path|
     p path
