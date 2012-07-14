@@ -85,8 +85,6 @@ while !map.is_done?
   command = DIRECTION_COMMANDS[best_move]
   new_map = map.command_robot(command).move_rocks
 
-  puts map
-  puts commands.join
 
   raise Abort, "move failed" if position == last_position
   raise Abort, "fatal move" if new_map.metadata["Dead"]
@@ -94,6 +92,9 @@ while !map.is_done?
   map = new_map
   commands << command
   last_position = position
+
+  puts map
+  puts commands.join
 end
 rescue Abort => a
   puts "\n!!! Stopped: #{a.message}"
