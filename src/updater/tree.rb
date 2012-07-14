@@ -97,4 +97,5 @@ iterations.times do |i|
   puts "Move robot time: #{tree.move_robot_time}"
   puts "Move rocks time: #{tree.move_rocks_time}"
   puts "Extra iterate time: #{iterate_time - tree.move_robot_time - tree.move_rocks_time}"
+  puts $time
 end

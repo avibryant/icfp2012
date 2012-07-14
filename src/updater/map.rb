@@ -296,6 +296,8 @@ class Parser
   end
 end
 
+$time = 0
+
 class Map
   DIRECTION_CLASSES = {
     "U" => Up,
@@ -338,13 +340,17 @@ class Map
     metadata = @metadata.clone
     if ENV["FAST"]
       old_lines = @cells.reverse.map{|r| r.map{|c| Parser.render_cell(c)}.join}
+      t1 = Time.new.to_f
       lines = FastUpdate.update(old_lines)
+      $time += (Time.new.to_f - t1)
       cells = Parser.parse_lines(lines)
     else
+      t1 = Time.new.to_f
      cells = @cells.map{|r| r.map{|c|
       c.update_metadata_rocks(metadata)
       c.move_rocks
       }}
+      $time += (Time.new.to_f - t1)
     end
     Map.new(cells, metadata)
   end
