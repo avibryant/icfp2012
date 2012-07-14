@@ -26,7 +26,7 @@ class Tree
           t2 = Time.new.to_f
           mr = mx.move_rocks
           t3 = Time.new.to_f
-          new_leaves[moves + dir] = mx
+          new_leaves[moves + dir] = mr
           @leaves_considered += 1
           @move_robot_time += (t2 - t1)
           @move_rocks_time += (t3 - t2)
@@ -82,8 +82,11 @@ map = Map.parse(STDIN.read)
 tree = Tree.new(map)
 iterations = ARGV.shift.to_i
 prune = ARGV.shift.to_i
+iterate_time = 0
 iterations.times do |i|
+  t1 = Time.new.to_f
   tree.iterate
+  iterate_time += (Time.new.to_f - t1)
   tree.prune(prune)
   puts "Iteration #{i+1}"
   puts "Leaves: #{tree.leaves.size}"
@@ -93,4 +96,5 @@ iterations.times do |i|
   puts "Best moves: #{moves}"
   puts "Move robot time: #{tree.move_robot_time}"
   puts "Move rocks time: #{tree.move_rocks_time}"
+  puts "Extra iterate time: #{iterate_time - tree.move_robot_time - tree.move_rocks_time}"
 end
