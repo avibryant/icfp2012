@@ -88,7 +88,7 @@ object TileMap {
     val untrackedKeys = Set(Robot)
     val cellPositions : Map[Cell, Set[Position]] = (pmap -- untrackedKeys).mapValues { _.toSet }
 
-    //Todo: extension-specific parsing of metadataTokens goes here
+    //extension-specific parsing of metadataTokens
     val water = WaterState.parse(metadataTokens)
     val tramps = TrampolineState.parse(metadataTokens)
 
@@ -322,20 +322,17 @@ case class TileMap(state : TileState, robotState : RobotState,
 
   lazy val heatmapScore = heatmap(robotState.pos)
 
-  //todo - add in a heatmap value
-  lazy val progress : Double = {
-    val progressScore = 
-      if(completed)
+  def progressScore = {
+    if(completed)
         score
       else
+        //todo these may want different weights
         abortScore + (heatmapScore * 0.8)
-
-    progressScore.toDouble / (totalLambdas * 75)
   }
 
   lazy val totalLambdas = collectedLam.size + remainingLam.size
+  lazy val progress = progressScore.toDouble / (totalLambdas * 75)
 
-  //todo use the heatmap to select and order these
   val validMoves = {
     if(completed)
       List(Wait)
@@ -346,6 +343,10 @@ case class TileMap(state : TileState, robotState : RobotState,
         .reverse ++
       List(Wait)
     }
+  }
+
+  def moveScores = {
+    List(Left, Down, Right, Up).map{dir => (dir, move(dir).heatmapScore, move(dir).progressScore)}
   }
 }
 
