@@ -1,12 +1,19 @@
 package icfp2012.barbers
 
-case class Position(x : Int, y: Int) {
+case class Position(x : Int, y: Int) extends Ordered[Position] {
   def move(m : Move) : Position = m match {
     case Left => Position(x-1, y)
     case Right => Position(x+1, y)
     case Up => Position(x, y+1)
     case Down => Position(x, y-1)
     case _ => this
+  }
+  override def compare(other : Position) : Int = {
+    // Left to right, the bottom to top, so, y, then x:
+    y.compareTo(other.y) match {
+      case 0 => x.compareTo(other.x)
+      case c => c
+    }
   }
 }
 
