@@ -18,6 +18,8 @@ class TileState(state : IndexedSeq[IndexedSeq[Cell]]) {
     }
   }
 
+  def cells = {state}
+
   def colsRows : (Int,Int) = {
     val rows = state.size
     val cols = state.map { _.size }.max
@@ -94,8 +96,11 @@ case class TileMap(state : TileState, robotState : RobotState,
     "map: \n" + state.toString + "\n" +
     "score: " + score.toString + "\n" +
     "move count: " + robotState.moves.size + "\n" +
-    "moves: " + robotState.moves.reverse.map { Move.charOf(_) }.mkString("") + "\n"
+    "moves: " + robotState.moves.reverse.map { Move.charOf(_) }.mkString("") + "\n" +
+    "heatmap: \n" + heatmap + "\n"
   }
+
+  val heatmap = new HeatMap(this)
 
   def move(mv : Move) : TileMap = moveRobot(mv).moveRocks
 
