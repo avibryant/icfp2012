@@ -258,9 +258,13 @@ case class TileMap(state : TileState, robotState : RobotState,
       score
   }
 
+  //todo - add in a heatmap value
   lazy val progress : Double = {
     abortScore.toDouble / ((collectedLam.size + remainingLam.size) * 75)
   }
+
+  //todo use the heatmap to select and order these
+  val validMoves = List(Left, Down, Right, Up, Wait)
 }
 
 

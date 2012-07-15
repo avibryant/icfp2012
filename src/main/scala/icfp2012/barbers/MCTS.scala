@@ -17,16 +17,18 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
     var count = 0.0d
     var totalScore = 0.0d
     var totalScore2 = 0.0d
-    //todo- is there a cheaper representation?
-    var children = Map[Move,Node]()
+
+    var untriedMoves = tm.validMoves
+    var children = List[Node]()
+
+    def lastMove = tm.robotState.moves.head
 
     def select : Node = {
       if(tm.gameState == Playing) {
-        val untried = untriedMoves
-        if(untried == Nil)
-          bestChild.select
+        if(untriedMoves == Nil)
+          children.maxBy(_.ucb).select
         else
-          expand(untried)
+          addChild(createChild(untriedMoves.head))
       } else {
         this
       }
@@ -43,19 +45,8 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
        math.sqrt((totalScore2 - (count*x*x) + D) / count)
     }
 
-    val validMoves = List(Left, Down, Right, Up, Wait) 
-    def untriedMoves = validMoves.filter{!children.contains(_)}
-
-    def bestChild = children.values.maxBy(_.ucb)
-
-    //todo: this might want to use heatmap
-    def expand(moves : List[Move]) = createChild(moves.head)
     def createChild(mv : Move) = new Node(tm.move(mv), this)
 
-    //todo: this should definitely use heatmap
-    def move = createChild(validMoves(rand.nextInt(5)))
-
-    //todo: could probably be tailrec
     def simulate = {
       var depth = 0
       var best = this
@@ -70,7 +61,11 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
       best
     }
 
-    //todo: could use heatmap
+    def move = createChild(pickMove(tm.validMoves))
+
+    //todo : when validMoves is smarter, skew this to early items
+    def pickMove(moves : List[Move]) = moves(rand.nextInt(moves.size))
+    
     def score = tm.progress
 
     @tailrec
@@ -78,12 +73,22 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
       totalScore += score
       totalScore2 += (score*score)
       count += 1
+
       if(parent != null) {
-        val lastMove = tm.robotState.moves.head
-        if(!parent.children.contains(lastMove))
-          parent.children(lastMove) = this
+        parent.ensureChild(this)
         parent.update(score)
       }
+    }
+
+    def ensureChild(child : Node) {
+      if(untriedMoves.contains(child.lastMove))
+        addChild(child)
+    }
+
+    def addChild(child : Node) = {
+      untriedMoves = untriedMoves.filter(_ != child.lastMove)
+      children = child :: children
+      child
     }
   }
 
