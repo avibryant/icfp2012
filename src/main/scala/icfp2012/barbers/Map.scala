@@ -165,7 +165,7 @@ case class TileMap(state : TileState, robotState : RobotState,
     // Make sure none of the new positions are in the dangerZone
     val newBotIsCrushed = writes.forall { _._2 != dangerZone } == false
 
-    val newWaterState = waterState.update
+    val newWaterState = waterState.update(robotState)
 
     copy(state = newState, rocks = newRocks, botIsCrushed = newBotIsCrushed, waterState = newWaterState)
   }
@@ -175,7 +175,7 @@ case class TileMap(state : TileState, robotState : RobotState,
     if( completed ) {
       Winning
     }
-    else if (botIsCrushed) {
+    else if (botIsCrushed || waterState.botIsDrowned) {
       Losing
     }
     else if (robotState.isAborted) {
@@ -262,13 +262,15 @@ case class TileMap(state : TileState, robotState : RobotState,
   }
 
   lazy val score : Int = {
-    val multiplier = gameState match {
-      case Winning => 3
-      case Aborted => 2
-      case _ => 1
+    val (multiplier, offset) = gameState match {
+      case Winning => (3, 0)
+      case Aborted => (2, 1)
+      case _ => (1, 0)
     }
+
     collectedLam.size * 25 * multiplier -
-      robotState.moves.size
+      robotState.moves.size +
+      offset
   }
 
   lazy val abortScore : Int = {
