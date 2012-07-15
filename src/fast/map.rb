@@ -20,7 +20,7 @@ class FastMap
     end
   end
 
-  def value
+  def heatmap_value
     @heatmap[fixed_find('R').reverse]
   end
 
@@ -160,53 +160,12 @@ class FastMap
     @abort_score
   end
 
-  def score_ratio
-   abort_score.to_f / (@total_lambdas * 75)
+  def progress
+   (abort_score + (heatmap_value)).to_f / (@total_lambdas * 75)
   end
 
   def moves
     @moves
-  end
-
-  def target_positions
-    pos = []
-    @lines.each_with_index do |line, row|
-      (0...line.size).each do |col|
-        if(line[col] == ?O || line[col] == ?\\)
-          pos << [row, col]
-        end
-      end
-    end
-    pos
-  end
-
-  def nearest_target
-    return @nearest if @nearest
-
-    targets = target_positions
-    @nearest = nil
-    nearest_dist = nil
-    targets.each do |t|
-      dist = distance_to(t)
-      if !@nearest || dist < nearest_dist
-        @nearest = t
-        nearest_dist = dist
-      end
-    end
-    @nearest
-  end
-
-  def distance_to(pos)
-    (@robot[0] - pos[0]).abs + (@robot[1] - pos[1]).abs
-  end
-
-  def direction_to(pos)
-    options = []
-    options << "U" if(pos[0] < @robot[0])
-    options << "D" if(pos[0] > @robot[0])
-    options << "L" if(pos[1] < @robot[1])
-    options << "R" if(pos[1] > @robot[1])
-    options[rand(options.size)] 
   end
 
   def total_lambdas

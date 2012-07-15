@@ -29,30 +29,28 @@ class MonteCarloTree
     depth = 0
     until map.done? || depth > max_depth
       map = move(map)
-      if map.score_ratio > best.score_ratio
+      if map.progress > best.progress
         best = map
       end
       depth += 1
     end
 
     if best.abort_score >= @best.score
-        if best.done?
-          @best = best
-        else
-          @best = best.move("A")
-        end
-        dump
+      if best.done?
+        @best = best
+      else
+        @best = best.move("A")
+      end
+      dump
     end
 
-    moves = best.moves
-    parents = [""] +
-              (0...moves.size).map{|i| moves[0..i]} +
-              (0...moves.size).map{|i| moves[0..i].delete("W")}
- 
-    parents.uniq.each do |p|
+    parents = (0..best.moves.size).map{|i| best.moves[0...i]}
+    s = best.progress
+    s2 = s*s 
+    parents.each do |p|
       @counts[p] += 1
-      @scores[p] += best.score_ratio
-      @squared_scores[p] += (best.score_ratio * best.score_ratio)
+      @scores[p] += s
+      @squared_scores[p] += s2
     end
  
     if time_since_last_dump > 10
@@ -76,14 +74,7 @@ class MonteCarloTree
       if(untried.empty?)
         map = best_child(map)
       else
-        tried = MOVES - untried
-        if(tried != [] && tried != ["W"] && rand > 0.5)
-         # puts "r"
-          map = best_child(map)
-        else
-        #  puts "e"
-          return expand(map, untried)
-        end
+        return expand(map, untried)
       end
     end
     map
