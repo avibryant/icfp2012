@@ -216,7 +216,7 @@ case class TileMap(state : TileState, robotState : RobotState,
               val newRockPos = newPos.move(Right)
               val movedTileState = emptiedTileState.updated(newRockPos, Rock)
               //Move the rocks
-              copy(state = emptiedTileState,
+              copy(state = movedTileState,
                 robotState = newRobotState,
                 rocks = (rocks - newPos) + newRockPos)
             }
@@ -228,7 +228,7 @@ case class TileMap(state : TileState, robotState : RobotState,
               val newRockPos = newPos.move(Left)
               val movedTileState = emptiedTileState.updated(newRockPos, Rock)
               //Move the rocks
-              copy(state = emptiedTileState,
+              copy(state = movedTileState,
                 robotState = newRobotState,
                 rocks = (rocks - newPos) + newRockPos)
             }

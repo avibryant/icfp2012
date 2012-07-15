@@ -83,9 +83,13 @@ class RandomMover(args : Array[String]) extends IterativeAlgorithm(args) {
 class Animate(args : Array[String]) extends IterativeAlgorithm(args) {
 
   def next(tm : TileMap) = {
-    val nextTm = tm.move(Move.parse(args(0).head))
-    println(nextTm)
-    (nextTm, new Animate(Array(args(0).tail)))
+    if(args(0).size > 0) {
+      val nextTm = tm.move(Move.parse(args(0).head))
+      println(nextTm)
+      (nextTm, new Animate(Array(args(0).tail)))
+    } else {
+      (tm.move(Abort), this)
+    }
   }
 }
 
