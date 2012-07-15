@@ -80,6 +80,11 @@ class HeatMapCell(cell : Cell, initialValue : Int, position : (Int, Int)){
   val x = {position._1}
   val y = {position._2}
   def update(neighbors : Set[HeatMapCell]) : HeatMapCell = {
-    if (cell == Wall) new HeatMapCell(cell, -10000, position) else new HeatMapCell(cell, (Set(value) ++ neighbors.map{n => n.value - 1}).max, position)
+    if (cell == Wall)
+      new HeatMapCell(cell, -10000, position)
+    else if (cell == Rock)
+      new HeatMapCell(cell, (Set(value) ++ neighbors.map{n => n.value - 5}).max, position)
+    else
+      new HeatMapCell(cell, (Set(value) ++ neighbors.map{n => n.value - 1}).max, position)
   }
 }
