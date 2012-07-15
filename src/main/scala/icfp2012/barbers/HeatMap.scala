@@ -1,6 +1,12 @@
 package icfp2012.barbers
 
+object HeatMap {
+  val NEG_INF = -10000
+}
+
 class HeatMap(map: TileMap){
+  import HeatMap.NEG_INF
+
   var cells = map.state.cells
 
   def apply(pos : Position) = {
@@ -19,16 +25,16 @@ class HeatMap(map: TileMap){
 
   def heatOf(c : Cell) : Int = {
     c match {
-      case Robot => -10000
-      case Rock => -10000
-      case CLift => -10000
-      case Earth => -10000
-      case Wall => -10000
+      case Robot => NEG_INF
+      case Rock => NEG_INF
+      case CLift => NEG_INF
+      case Earth => NEG_INF
+      case Wall => NEG_INF
       case Lambda => 25
       case OLift => (map.totalLambdas * 25)
-      case Empty => -10000
+      case Empty => NEG_INF
       case Trampoline(c) => 0 //TODO probably should be smarter
-      case Target(_) => -10000 //Same as a wall
+      case Target(_) => NEG_INF //Same as a wall
     }
   }
 
@@ -52,14 +58,14 @@ class HeatMap(map: TileMap){
         cell =>
         val x = cell.x
         val y = cell.y
-        val neighborPositions : Set[(Int,Int)] = Set((x, y - 1), (x - 1, y), (x, y + 1), (x + 1, y))
+        val neighborPositions = List((x, y - 1), (x - 1, y), (x, y + 1), (x + 1, y))
         val validNeighbors = neighborPositions
           .filter{position : (Int, Int) =>
             position._2 >= 0 && position._2 < state.size && position._1 >= 0 && position._1 < state(position._2).size
           }
           .map{ position => state(position._2)(position._1)}
         val newCell = cell.update(validNeighbors)
-        if (cell.value != newCell.value) changed = changed ++ Set((newCell, (x,y), validNeighbors))
+        if (cell.value != newCell.value) changed = changed ++ Set((newCell, (x,y), validNeighbors.toSet))
     }
     changed.foreach {
       change =>
@@ -73,18 +79,26 @@ class HeatMap(map: TileMap){
 }
 
 class HeatMapCell(cell : Cell, initialValue : Int, position : (Int, Int)){
+  import HeatMap.NEG_INF
   val value : Int = {initialValue}
   override lazy val toString : String = {
-    if(value <= -10000) " . " else "%3d".format(value)
+    if(value <= NEG_INF) " . " else "%3d".format(value)
   }
   val x = {position._1}
   val y = {position._2}
-  def update(neighbors : Set[HeatMapCell]) : HeatMapCell = {
+  def update(neighbors : List[HeatMapCell]) : HeatMapCell = {
     if (cell == Wall)
-      new HeatMapCell(cell, -10000, position)
+      //walls never change:
+      if( initialValue == NEG_INF) {
+        this
+      }
+      else {
+        // Can't see how this would actually happen TODO: remove
+        new HeatMapCell(cell, NEG_INF, position)
+      }
     else if (cell == Rock)
-      new HeatMapCell(cell, (Set(value) ++ neighbors.map{n => n.value - 5}).max, position)
+      new HeatMapCell(cell, (value :: neighbors.map{n => n.value - 5}).max, position)
     else
-      new HeatMapCell(cell, (Set(value) ++ neighbors.map{n => n.value - 1}).max, position)
+      new HeatMapCell(cell, (value :: neighbors.map{n => n.value - 1}).max, position)
   }
 }
