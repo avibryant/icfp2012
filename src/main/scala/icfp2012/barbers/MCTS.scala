@@ -39,7 +39,7 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
 
     //magic, and can be tweaked
     val C = 1.0 / math.sqrt(2.0)
-    val D = 1000.0
+    val D = 1
 
     def ucb = {
       val x = totalScore / count
@@ -124,6 +124,7 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
 
         println("New solution:")
         println(solution)
+        println("Progress score: " + solution.progress)
         println("Elapsed time: " + (System.currentTimeMillis - startTime))
         println("Tree size: " + nodeCount)
         println("Moves/sec: " + (moveCount * 1000 / (System.currentTimeMillis - startTime)))

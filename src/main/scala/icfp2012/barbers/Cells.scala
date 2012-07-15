@@ -31,7 +31,7 @@ object Cell {
       case Earth => -10000
       case Wall => -10000
       case Lambda => 25
-      case OLift => 500
+      case OLift => 99
       case Empty => -10000
     }
   }
