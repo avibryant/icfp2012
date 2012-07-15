@@ -90,10 +90,11 @@ case class TileMap(state : TileState, robotState : RobotState,
   rocks : Set[Position], collectedLam : List[Position],
   remainingLam : Set[Position], liftPos : Position, completed : Boolean) {
 
-  override def toString = {
+  override lazy val toString = {
     "map: \n" + state.toString + "\n" +
     "score: " + score.toString + "\n" +
-    "moves: " + robotState.moves.size + "\n"
+    "move count: " + robotState.moves.size + "\n" +
+    "moves: " + robotState.moves.reverse.map { Move.charOf(_) }.mkString("") + "\n"
   }
 
   def move(mv : Move) : TileMap = moveRobot(mv).moveRocks
