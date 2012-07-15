@@ -13,6 +13,9 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
   val maxDepth = args(1).toInt
   val rand = new java.util.Random
 
+  var moveCount = 0
+  var nodeCount = 0
+
   class Node(val tm : TileMap, parent : Node) {
     var count = 0.0d
     var totalScore = 0.0d
@@ -54,6 +57,7 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
 
       while(step.tm.gameState == Playing && depth <= maxDepth) {
         depth += 1
+        moveCount += 1
         step = step.move
         if(step.score > best.score)
           best = step
@@ -86,6 +90,7 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
     }
 
     def addChild(child : Node) = {
+      nodeCount += 1
       untriedMoves = untriedMoves.filter(_ != child.lastMove)
       children = child :: children
       child
@@ -117,6 +122,8 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
         println("New solution:")
         println(solution)
         println("Elapsed time: " + (System.currentTimeMillis - startTime))
+        println("Tree size: " + nodeCount)
+        println("Moves/sec: " + (moveCount * 1000 / (System.currentTimeMillis - startTime)))
       }
     }
     solution

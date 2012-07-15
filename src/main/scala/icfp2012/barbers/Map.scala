@@ -63,18 +63,33 @@ object TileMap {
 
   def parse(lines : TraversableOnce[String]) : TileMap = {
     // Make the tileState:
-    val ts = new TileState(lines
-      .toIndexedSeq
-      .map { line : String =>
+    val linesSeq = lines.toIndexedSeq
+    var metadataIndex = linesSeq.indexOf("")
+    if(metadataIndex < 0)
+      metadataIndex = linesSeq.size
+
+    val ts = new TileState(linesSeq
+        .take(metadataIndex)
+        .map { line : String =>
         line.toIndexedSeq.map { c : Char => Cell.parse(c) }
       }
       // We read from bottom to top, so we must reverse
       .reverse)
     // Look for the robot, rocks, lambdas and closed lift:
     val pmap = ts.positionMap(Set(Robot, Rock, Lambda, CLift))
+
+    val metadataTokens = linesSeq.drop(metadataIndex+1).map {line =>
+      val parts = line.split(" ")
+      (parts.head, parts.tail.toList)
+    }
+
+    //Todo: extension-specific parsing of metadataTokens goes here
+    val water = WaterState.parse(metadataTokens)
+
     // We have enough to build the tileMap:
     new TileMap(ts, RobotState(Nil, List(pmap(Robot).head)),
-      pmap(Rock).toSet, Nil, pmap(Lambda).toSet, pmap(CLift)(0), false, false)
+      pmap(Rock).toSet, Nil, pmap(Lambda).toSet, pmap(CLift)(0), false, false,
+      water)
   }
 
 }
@@ -90,7 +105,8 @@ case object Aborted extends GameState
  */
 case class TileMap(state : TileState, robotState : RobotState,
   rocks : Set[Position], collectedLam : List[Position],
-  remainingLam : Set[Position], liftPos : Position, completed : Boolean, botIsCrushed : Boolean) {
+  remainingLam : Set[Position], liftPos : Position, completed : Boolean, botIsCrushed : Boolean,
+  waterState : WaterState) {
 
   override lazy val toString = {
     heatmap.populate
@@ -98,7 +114,8 @@ case class TileMap(state : TileState, robotState : RobotState,
     "score: " + score.toString + "\n" +
     "move count: " + robotState.moves.size + "\n" +
     "moves: " + robotState.moves.reverse.map { Move.charOf(_) }.mkString("") + "\n" +
-    "heatmap: \n" + heatmap + "\n"
+    "heatmap: \n" + heatmap + "\n" + 
+    waterState.toString + "\n"
   }
 
   val heatmap = new HeatMap(this)
@@ -153,7 +170,10 @@ case class TileMap(state : TileState, robotState : RobotState,
     val dangerZone = robotState.pos.move(Up)
     // Make sure none of the new positions are in the dangerZone
     val newBotIsCrushed = writes.forall { _._2 != dangerZone } == false
-    copy(state = newState, rocks = newRocks, botIsCrushed = newBotIsCrushed)
+
+    val newWaterState = waterState.update(robotState)
+
+    copy(state = newState, rocks = newRocks, botIsCrushed = newBotIsCrushed, waterState = newWaterState)
   }
 
   lazy val gameState : GameState = {
@@ -161,7 +181,7 @@ case class TileMap(state : TileState, robotState : RobotState,
     if( completed ) {
       Winning
     }
-    else if (botIsCrushed) {
+    else if (botIsCrushed || waterState.botIsDrowned) {
       Losing
     }
     else if (robotState.isAborted) {
@@ -248,13 +268,15 @@ case class TileMap(state : TileState, robotState : RobotState,
   }
 
   lazy val score : Int = {
-    val multiplier = gameState match {
-      case Winning => 3
-      case Aborted => 2
-      case _ => 1
+    val (multiplier, offset) = gameState match {
+      case Winning => (3, 0)
+      case Aborted => (2, 1)
+      case _ => (1, 0)
     }
+
     collectedLam.size * 25 * multiplier -
-      robotState.moves.size
+      robotState.moves.size +
+      offset
   }
 
   lazy val abortScore : Int = {
