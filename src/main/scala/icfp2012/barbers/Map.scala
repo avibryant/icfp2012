@@ -74,7 +74,7 @@ object TileMap {
       // We read from bottom to top, so we must reverse
       .reverse)
     // Look for the robot, rocks, lambdas and closed lift:
-    val pmap = ts.positionMap(Set(Robot, Rock, Lambda, CLift))
+    val pmap = ts.positionMap(Set(Robot, Rock, Lambda, CLift, Beard))
 
     val metadataTokens = linesSeq.drop(metadataIndex+1).map {line =>
       val parts = line.split(" ")
@@ -84,15 +84,17 @@ object TileMap {
     val cellPositions : Map[Cell, Set[Position]] = Map(
       Rock -> pmap(Rock).toSet,
       Lambda -> pmap(Lambda).toSet,
-      CLift -> pmap(CLift).toSet
+      CLift -> pmap(CLift).toSet,
+      Beard -> pmap(Beard).toSet
     )
 
     //Todo: extension-specific parsing of metadataTokens goes here
     val water = WaterState.parse(metadataTokens)
+    val beardGrowth = TextHelper.parseInt(metadataTokens, "Growth", 0)
 
     // We have enough to build the tileMap:
     new TileMap(ts, RobotState(Nil, List(pmap(Robot).head)),
-      cellPositions, Nil, false, false, water)
+      cellPositions, Nil, false, false, water, beardGrowth)
   }
 
 }
@@ -107,7 +109,8 @@ case object Aborted extends GameState
  * Immutable class representing the update/scoring rules of the 2012 contest
  */
 case class TileMap(state : TileState, robotState : RobotState, cellPositions: Map[Cell, Set[Position]],
-  collectedLam : List[Position], completed : Boolean, botIsCrushed : Boolean, waterState : WaterState) {
+  collectedLam : List[Position], completed : Boolean, botIsCrushed : Boolean, waterState : WaterState,
+  beardGrowthRate : Int) {
 
   override lazy val toString = {
     "map: \n" + state.toString + "\n" +
@@ -119,9 +122,23 @@ case class TileMap(state : TileState, robotState : RobotState, cellPositions: Ma
 
   def move(mv : Move) : TileMap = moveRobot(mv).moveRocks
 
+  lazy val numberOfMoves = robotState.moves.size
+
   lazy val rocks : Set[Position] = cellPositions(Rock)
   lazy val remainingLam : Set[Position] = cellPositions(Lambda)
   lazy val liftPos : Position = cellPositions(CLift).head
+  lazy val beardPos : Set[Position] = cellPositions(Beard)
+
+  protected def growBeards : TileMap = {
+    if (beardPos.isEmpty || numberOfMoves % beardGrowthRate != 0) {
+      return this
+    }
+
+    var newBeards = beardPos.flatMap(_.neighbors8)
+    var newState = newBeards.foldLeft(state) { (s, pos) => s.updated(pos, Beard) }
+    var newCellPositions = cellPositions + (Beard -> newBeards)
+    copy(state = newState, cellPositions = newCellPositions)
+  }
 
   protected def moveRocks : TileMap = {
     if (gameState != Playing) {

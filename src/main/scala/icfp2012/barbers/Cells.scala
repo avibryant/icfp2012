@@ -8,7 +8,9 @@ object Cell {
         '#' -> Wall,
         '\\' -> Lambda,
         'O' -> OLift,
-        ' ' -> Empty)
+        ' ' -> Empty,
+        'W' -> Beard,
+        '!' -> Razor)
 
   def parse(c : Char) : Cell = parser(c)
   def charOf(c : Cell) : Char = {

@@ -8,6 +8,20 @@ case class Position(x : Int, y: Int) extends Ordered[Position] {
     case Down => Position(x, y-1)
     case _ => this
   }
+
+  def neighbors4 : List[Position] = {
+    List(move(Up), move(Right), move(Up), move(Down))
+  }
+
+  def neighbors8 : List[Position] = {
+    neighbors4 ++ List(
+      Position(x+1, y+1),
+      Position(x-1, y-1),
+      Position(x+1, y-1),
+      Position(x-y, y+1)
+    )
+  }
+
   override def compare(other : Position) : Int = {
     // Left to right, the bottom to top, so, y, then x:
     y.compareTo(other.y) match {
