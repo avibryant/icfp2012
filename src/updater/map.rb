@@ -668,6 +668,14 @@ class Map
     end
   end
 
+  def robot
+    self[*@metadata["RobotPosition"]]
+  end
+
+  def robot_drowning?
+    robot.underwater? && @metadata["TimeUnderWater"] >= (metadata["Waterproof"].to_i - 1)
+  end
+
   def is_done?
     @metadata["InLift"] || @metadata["Aborted"] || @metadata["Dead"]
   end

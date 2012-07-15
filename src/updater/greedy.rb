@@ -1,17 +1,16 @@
-require 'map'
+require './map'
 
-DIRECTIONS = [Up, Right, Down, Left]
-DIRECTION_COMMANDS = Map::DIRECTION_CLASSES.invert
+=begin
 
-MAX_ENTROPY = 10
+This is BDR, the "Big Dumb Robot"
 
-map = Map.parse(ARGF.read)
-map.score_cells!
+It uses a simple greedy search algorithm along with a few simple heuristics
+to quickly move towards the nearest Lambda or (if they've all been captured)
+OpenLift tile in the map. (Actually, it doesn't know anything about tile
+types, and instead dumbly moves to the highest-scored neighboring tile on each
+iteration.
 
-commands = []
-last_position = nil
-
-class Abort < StandardError; end
+=end
 
 class RingBuffer
   def initialize(limit)
@@ -33,78 +32,102 @@ class RingBuffer
   end
 end
 
-last_2_moves = RingBuffer.new(2)
-move_counts = Hash.new(0)
-current_entropy = 0
+class BDR
+  DIRECTIONS = [Up, Right, Down, Left]
+  DIRECTION_COMMANDS = Map::DIRECTION_CLASSES.invert
 
-def available_moves_from(cell)
-  avail_moves = DIRECTIONS.dup
-  avail_moves.delete(Down) if Rock === cell.above
-  avail_moves.reject! {|dir| ca = cell.cell_at(dir); Wall === ca || Rock === ca }
-  move_values = avail_moves.zip(avail_moves.map {|d| cell.cell_at(d).value })
-  move_values.sort_by {|p| -p[1] } #.reject {|p| p[1] < 0 }
-end
+  class Abort < StandardError; end
+  class WouldDrown < Abort; end
+  class LoopDetected < Abort; end
+  class NoValidMoves < Abort; end
+  class WouldDie < Abort; end
+  class MoveFailed < Abort; end
 
-begin
-while !map.is_done?
-  map.score_cells!
+  attr_reader :map, :commands, :position, :error
 
-  metadata = map.metadata
-
-  position = metadata["RobotPosition"]
-  robot = map[*position]
-
-  if robot.underwater? && metadata["TimeUnderWater"] >= (metadata["Waterproof"].to_i - 1)
-    raise Abort, "going to drown"
+  def initialize(map)
+    @map = map
+    @commands = []
+    @position = nil
+    @recent_moves = RingBuffer.new(2)
   end
 
-  move_values = available_moves_from(robot)
-  raise Abort, "no valid moves" if move_values.empty?
+  def metadata
+    @map.metadata
+  end
 
-  best_move, best_score = move_values.shift
-  move_trace = [best_move, position]
+  def step!
+    last_position = position
+    @map.score_cells!
 
-  # If we're at a local maxima, recalculate cell scores with some entropy
-  # (I call this "ghetto annealing")
-  # Do the same for loops
-  if (best_score <= robot.value) || last_2_moves.member?(move_trace)
-    [2, nil].each {|i| map.score_cells!(i) }
+    robot = map.robot
+    position = metadata["RobotPosition"]
+
+    raise WouldDrown if map.robot_drowning?
+
     move_values = available_moves_from(robot)
-    raise Abort, "no valid moves" if move_values.empty?
-    best_move, best_score = move_values[0]
+    raise NoValidMoves if move_values.empty?
+
+    best_move, best_score = move_values.shift
+    move_trace = [best_move, position]
+
+    # If we're at a local maxima, recalculate cell scores with some entropy
+    # (I call this "ghetto annealing")
+    if (best_score <= robot.value) || @recent_moves.member?(move_trace)
+      [2, nil].each {|i| @map.score_cells!(i) }
+      move_values = available_moves_from(robot)
+      raise NoValidMoves if move_values.empty?
+      best_move, best_score = move_values[0]
+    end
+
+    raise LoopDetected if @recent_moves.member?(move_trace)
+
+    @recent_moves << move_trace
+
+    command = DIRECTION_COMMANDS[best_move]
+    new_map = map.command_robot(command).move_rocks
+
+    raise WouldDie, best_move if new_map.metadata["Dead"]
+    raise MoveFailed, best_move if position == last_position
+
+    @map = new_map
+    @commands << command
+    @position = position
   end
 
-  if last_2_moves.member?(move_trace) && move_counts[move_trace] > 2
-    raise Abort, "loop detected"
+  def run!
+    begin
+      while !map.is_done?
+        step!
+        @on_step.call(self)
+      end
+    rescue Abort => a
+      @error = a
+      @commands << "A"
+    end
   end
 
-  last_2_moves << move_trace
-  move_counts[move_trace] += 1
+  def on_step(&block)
+    @on_step = block
+  end
 
-  puts ">>> #{best_move} -> #{robot.cell_at(best_move)} [#{best_score}]"
-  command = DIRECTION_COMMANDS[best_move]
-  new_map = map.command_robot(command).move_rocks
-
-
-  raise Abort, "move failed" if position == last_position
-  raise Abort, "fatal move" if new_map.metadata["Dead"]
-
-  map = new_map
-  commands << command
-  last_position = position
-
-  puts map
-  puts commands.join
-  puts
-end
-rescue Abort => a
-  puts "\n!!! Stopped: #{a.message}"
-  commands << "A"
+  def available_moves_from(cell)
+    avail_moves = DIRECTIONS.dup
+    avail_moves.delete(Down) if Rock === cell.above
+    avail_moves.reject! {|dir| ca = cell.cell_at(dir); Wall === ca || Rock === ca }
+    move_values = avail_moves.zip(avail_moves.map {|d| cell.cell_at(d).value })
+    move_values.sort_by {|p| -p[1] } #.reject {|p| p[1] < 0 }
+  end
 end
 
+map = Parser.parse(ARGF.read)
+bot = BDR.new(map)
+bot.on_step {|b| puts "---"; puts b.map }
+bot.run!
 puts "\n==="
-puts map
+puts "Status: #{bot.error ? bot.error.class: "Okay!"}"
+puts bot.map
 puts
-puts commands.join
-puts "Expected score: #{map.score}"
+puts bot.commands.join
+puts "Expected score: #{bot.map.score}"
 
