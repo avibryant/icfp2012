@@ -356,8 +356,10 @@ case class TileMap(state : TileState, robotState : RobotState,
         score
       else
         //todo these may want different weights
-        abortScore + (heatmapScore * 0.8)
+        (abortScore.toDouble / 3) + (heatmapScore)
   }
+
+  def scoreRatio = score.toDouble / (totalLambdas * 75)
 
   lazy val totalLambdas = collectedLam.size + remainingLam.size
   lazy val progress = progressScore.toDouble / (totalLambdas * 75)
