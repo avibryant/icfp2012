@@ -80,6 +80,15 @@ class RandomMover(args : Array[String]) extends IterativeAlgorithm(args) {
   }
 }
 
+class Animate(args : Array[String]) extends IterativeAlgorithm(args) {
+
+  def next(tm : TileMap) = {
+    val nextTm = tm.move(Move.parse(args(0).head))
+    println(nextTm)
+    (nextTm, new Animate(Array(args(0).tail)))
+  }
+}
+
 class Greedy(args : Array[String]) extends Algorithm(args) {
   val moves = List(Left,Right,Up,Down,Abort)
 
