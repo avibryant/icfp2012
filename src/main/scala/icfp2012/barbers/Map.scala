@@ -309,10 +309,14 @@ case class TileMap(state : TileState, robotState : RobotState, cellPositions: Ma
 
   //todo use the heatmap to select and order these
   val validMoves = {
-    List(Left, Down, Right, Up).map{dir => (dir, heatmap(robotState.pos.move(dir)))}
-      .sortBy(_._2)
-      .map(_._1) ++
-    List(Wait)
+    if(completed)
+      List(Wait)
+    else {
+      List(Left, Down, Right, Up).map{dir => (dir, heatmap(robotState.pos.move(dir)))}
+        .sortBy(_._2)
+        .map(_._1) ++
+      List(Wait)
+    }
   }
 }
 
