@@ -14,6 +14,7 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
   val rand = new java.util.Random
 
   var moveCount = 0
+  var nodeCount = 0
 
   class Node(val tm : TileMap, parent : Node) {
     var count = 0.0d
@@ -89,6 +90,7 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
     }
 
     def addChild(child : Node) = {
+      nodeCount += 1
       untriedMoves = untriedMoves.filter(_ != child.lastMove)
       children = child :: children
       child
@@ -120,6 +122,7 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
         println("New solution:")
         println(solution)
         println("Elapsed time: " + (System.currentTimeMillis - startTime))
+        println("Tree size: " + nodeCount)
         println("Moves/sec: " + (moveCount * 1000 / (System.currentTimeMillis - startTime)))
       }
     }

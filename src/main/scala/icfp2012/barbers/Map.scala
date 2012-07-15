@@ -61,15 +61,28 @@ object TileMap {
 
   def parse(lines : TraversableOnce[String]) : TileMap = {
     // Make the tileState:
-    val ts = new TileState(lines
-      .toIndexedSeq
-      .map { line : String =>
+    val linesSeq = lines.toIndexedSeq
+    var metadataIndex = linesSeq.indexOf("")
+    if(metadataIndex < 0)
+      metadataIndex = linesSeq.size
+
+    val ts = new TileState(linesSeq
+        .take(metadataIndex)
+        .map { line : String =>
         line.toIndexedSeq.map { c : Char => Cell.parse(c) }
       }
       // We read from bottom to top, so we must reverse
       .reverse)
     // Look for the robot, rocks, lambdas and closed lift:
     val pmap = ts.positionMap(Set(Robot, Rock, Lambda, CLift))
+
+    val metadataTokens = linesSeq.drop(metadataIndex+1).map {line =>
+      val parts = line.split(" ")
+      (parts.head, parts.tail.toList)
+    }
+
+    //Todo: extension-specific parsing of metadataTokens goes here
+
     // We have enough to build the tileMap:
     new TileMap(ts, RobotState(Nil, List(pmap(Robot).head)),
       pmap(Rock).toSet, Nil, pmap(Lambda).toSet, pmap(CLift)(0), false, false)
