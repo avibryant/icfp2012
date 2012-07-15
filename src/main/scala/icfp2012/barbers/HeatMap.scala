@@ -19,6 +19,8 @@ class HeatMap(map: TileMap){
     row.zipWithIndex.map {
       cellx =>
       val (cell, x) = cellx
+      //TODO if cell is a trampoline 
+      //        this should be the target (x,y)----v
       new HeatMapCell(cell, heatOf(cell), (x,y), (x,y))
     }
   }
