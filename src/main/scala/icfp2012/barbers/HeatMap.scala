@@ -3,6 +3,10 @@ package icfp2012.barbers
 class HeatMap(map: TileMap){
   var cells = map.state.cells
 
+  def apply(pos : Position) = {
+    state(pos.y)(pos.x).value
+  }
+
   var state = cells.zipWithIndex.map {
     rowy =>
     val (row, y) = rowy
@@ -15,7 +19,7 @@ class HeatMap(map: TileMap){
 
   override def toString : String = {
     state.reverse
-      .map { _.mkString(",")}
+      .map { _.mkString(" ")}
       .mkString("\n")
   }
 
@@ -79,7 +83,7 @@ class HeatMap(map: TileMap){
 class HeatMapCell(cell : Cell, initialValue : Int, position : (Int, Int)){
   val value : Int = {initialValue}
   override lazy val toString : String = {
-    value.toString
+    if(value == -10000) " . " else "%3d".format(value)
   }
   val x = {position._1}
   val y = {position._2}
