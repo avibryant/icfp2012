@@ -20,7 +20,7 @@ class HeatMap(map: TileMap){
   }
 
   def populate = {
-    var changed : Set[(HeatMapCell, (Int,Int), Set[(Int,Int)])] = Set.empty
+    var changed : Set[(HeatMapCell, (Int,Int), Set[HeatMapCell])] = Set.empty
     state.foreach {
       row => 
       row.foreach {
@@ -28,11 +28,13 @@ class HeatMap(map: TileMap){
         val x = cell.x
         val y = cell.y
         val neighborPositions : Set[(Int,Int)] = Set((x, y - 1), (x - 1, y), (x, y + 1), (x + 1, y))
-        val validNeighborPositions = neighborPositions.filter{position : (Int, Int) => 
+        val validNeighbors = neighborPositions
+          .filter{position : (Int, Int) => 
             position._2 >= 0 && position._2 < state.size && position._1 >= 0 && position._1 < state(position._2).size
           }
-        val newCell = cell.update(validNeighborPositions.map{ position => state(position._2)(position._1)})
-        if (cell.value != newCell.value) changed = changed ++ Set((newCell, (x,y), validNeighborPositions))
+          .map{ position => state(position._2)(position._1)}
+        val newCell = cell.update(validNeighbors)
+        if (cell.value != newCell.value) changed = changed ++ Set((newCell, (x,y), validNeighbors))
       }
     }
     changed.foreach {
@@ -40,15 +42,38 @@ class HeatMap(map: TileMap){
       val newRow = state(change._2._2).updated(change._2._1, change._1)
       state = state.updated(change._2._2, newRow)
     }
-    val changedNeighborPositions = (changed.map{change => change._3} ++ Set.empty).reduce{
-      (a, b) => a ++ b
+    val changedNeighbors = changed.map{change => change._3}.flatten.toSet
+
+    furtherPopulate(changedNeighbors, 0)
+  }
+
+  def furtherPopulate(requiresUpdate : Set[HeatMapCell], iterations : Int) : Boolean = {
+    if ((iterations > 10) || (requiresUpdate.size == 0)) 
+      return requiresUpdate.size == 0
+
+    var changed : Set[(HeatMapCell, (Int,Int), Set[HeatMapCell])] = Set.empty
+    requiresUpdate.foreach{
+        cell =>
+        val x = cell.x
+        val y = cell.y
+        val neighborPositions : Set[(Int,Int)] = Set((x, y - 1), (x - 1, y), (x, y + 1), (x + 1, y))
+        val validNeighbors = neighborPositions
+          .filter{position : (Int, Int) => 
+            position._2 >= 0 && position._2 < state.size && position._1 >= 0 && position._1 < state(position._2).size
+          }
+          .map{ position => state(position._2)(position._1)}
+        val newCell = cell.update(validNeighbors)
+        if (cell.value != newCell.value) changed = changed ++ Set((newCell, (x,y), validNeighbors))
     }
+    changed.foreach {
+      change => 
+      val newRow = state(change._2._2).updated(change._2._1, change._1)
+      state = state.updated(change._2._2, newRow)
+    }
+    val changedNeighbors = changed.map{change => change._3}.flatten.toSet
+
+    furtherPopulate(changedNeighbors, iterations + 1)
   }
-
-  def furtherUpdate(requiresUpdate : Set[(Int, Int)]) = {
-
-  }
-
 }
 
 class HeatMapCell(cell : Cell, initialValue : Int, position : (Int, Int)){
