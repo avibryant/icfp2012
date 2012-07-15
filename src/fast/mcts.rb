@@ -1,4 +1,4 @@
-require 'map'
+require '../fast/map'
 
 class MonteCarloTree
   MOVES = ["L", "R", "U", "D", "W"]
@@ -29,13 +29,13 @@ class MonteCarloTree
     depth = 0
     until map.done? || depth > max_depth
       map = move(map)
-      if map.abort_score > best.abort_score
+      if map.adjusted_win_rate > best.adjusted_win_rate
         best = map
       end
       depth += 1
     end
 
-    if best.abort_score > @best.score
+    if best.abort_score >= @best.score
         if best.done?
           @best = best
         else
@@ -44,17 +44,17 @@ class MonteCarloTree
         dump
     end
 
-    moves = map.moves
+    moves = best.moves
     (0...moves.size).to_a.reverse.each do |i|
       parent_moves = moves[0..i]
       @counts[parent_moves] += 1
-      @scores[parent_moves] += best.abort_score
-      @squared_scores[parent_moves] += (best.abort_score * best.abort_score)
+      @scores[parent_moves] += best.adjusted_win_rate
+      @squared_scores[parent_moves] += (best.adjusted_win_rate * best.adjusted_win_rate)
       @recent_counts[parent_moves] += 1
     end
     @counts[""] += 1
-    @scores[""] += best.abort_score
-    @squared_scores[""] += (best.abort_score * best.abort_score)
+    @scores[""] += best.adjusted_win_rate
+    @squared_scores[""] += (best.adjusted_win_rate * best.adjusted_win_rate)
 
     if time_since_last_dump > 1
       dump
@@ -62,12 +62,10 @@ class MonteCarloTree
   end
 
   def move(map)
-    if rand < 0.5
-      map.move(MOVES[rand(MOVES.size)])
+    if rand < 0.1
+      map.move("W")
     else
-      nt = map.nearest_target
-      dir = map.direction_to(nt)
-      map.move(dir)
+      map.move(MOVES[rand(MOVES.size - 1)])
     end
   end
 
@@ -90,8 +88,8 @@ class MonteCarloTree
     next_map
   end
 
-  C = 0.5
-  D = 100000.0
+  C = 1.0 / Math.sqrt(2.0)
+  D = 1000.0
 
   def best_child(map)
     scores = children(map.moves).shuffle.map do |moves|
@@ -100,8 +98,8 @@ class MonteCarloTree
       m = @counts[map.moves].to_f
       x = q / n
       s = x +
-            (C * Math.sqrt(2.0 * Math.log(m) / n)) + 
-            (Math.sqrt(
+            (C * Math.sqrt(2.0 * Math.log(m) / n)) 
+            + (Math.sqrt(
               (@squared_scores[moves].to_f - (n*x*x) + D) / n))
       [s, moves, q, n, m]
     end
@@ -125,21 +123,17 @@ class MonteCarloTree
     puts "Best moves: #{@best.moves}"
     puts "Tree size: #{@maps.size}"
     puts "Time elapsed: #{time_elapsed}"
-    if @recent_counts.size > 5
-      puts "Top moves:"
-      @recent_counts.keys.sort.sort{|a,b| @recent_counts[a] <=> @recent_counts[b]}[-5..-1].each do |moves|
-        puts "  #{@recent_counts[moves]} #{moves}"
-      end
-    end
-    @recent_counts = Hash.new(0)
+  end
+
+  def best
+    @best
   end
 end
 
 map = FastMap.new(STDIN.read.split("\n"))
 tree = MonteCarloTree.new(map)
-max_depth = ARGV.shift.to_i
 max_time = ARGV.shift.to_i
 
 while tree.time_elapsed < max_time
-  tree.iterate(max_depth)
+  tree.iterate(map.total_lambdas * 10)
 end

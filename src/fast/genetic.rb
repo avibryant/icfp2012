@@ -15,6 +15,66 @@ class BaseAlg
       MOVES[pos]
     end
   end
+
+  def self.select_mutator(str, ms)
+    score = (ms.map { |m| m.weight(str) }.inject { |s,x| s+x })*rand(0)
+    ms.each do |m|
+      score -= m.weight(str)
+      if score <= 0.0
+        return m
+      end
+    end
+    ms[-1]
+  end
+end
+
+class Mutator < BaseAlg
+  def weight(str)
+    # bias twoards appending/prepending when the string is small
+    10.0
+  end
+
+  def operate(str)
+    str
+  end
+end
+
+class Appender < Mutator
+  def operate(str)
+    str + rand_move
+  end
+end
+
+class Prepender < Mutator
+  def operator(str)
+    rand_move + str
+  end
+end
+
+class Transposer < Mutator
+  def weight(str)
+    2.0 * ([str.size - 1,0].max).to_f
+  end
+  def operate(str)
+    pos = rand(str.size)
+    x = str[pos]
+    y = str[pos - 1]
+    strc = String.new(str)
+    strc[pos] = y
+    strc[pos - 1] = x
+    strc
+  end
+end
+
+class Snp < Mutator
+  def weight(str)
+    str.size.to_f
+  end
+  def operate(str)
+    strc = String.new(str)
+    pos = rand(str.size)
+    strc[pos] = rand_move_with_empty
+  end
 end
 
 class BlindWatchMaker < BaseAlg
@@ -23,19 +83,12 @@ class BlindWatchMaker < BaseAlg
   def initialize(empty_map, map)
     @empty_map = empty_map
     @map = map
+    @mutators = [Appender.new, Prepender.new, Transposer.new, Snp.new]
   end
 
   def mutate
-    pos = rand(map.moves.size + 1)
-    if pos == map.moves.size
-      #append:
-      BlindWatchMaker.new(empty_map, map.move(rand_move))
-    else
-      #replace:
-      moves = String.new(map.moves)
-      moves[pos] = rand_move_with_empty
-      BlindWatchMaker.new(empty_map, move_seq_to_map(moves))
-    end
+    new_moves = Mutator.select_mutator(map.moves, @mutators).operate(map.moves)
+    BlindWatchMaker.new(empty_map, move_seq_to_map(new_moves))
   end
 
   def move_seq_to_map(moves)
@@ -96,20 +149,24 @@ class BlindWatchMaker < BaseAlg
     }
   end
 
+  def self.dedup_moves(examples)
+    all_moves = {}
+    examples.each { |elem|
+      all_moves[elem.map.moves] = elem
+    }
+    all_moves.values
+  end
+
   def self.next_generation(examples, max, mutants = 1)
     mutants = examples.map { |e| (0...mutants).map { e.mutate } }.flatten
-    individuals = (mutants + examples)
+    individuals = self.dedup_moves(mutants + examples)
     scored = individuals.map { |e| [e.map.score, e] }
     tocross = self.top_pairs(scored,max)
     #tocross = self.proportional_to_score_pairs(scored,max)
     crossed = tocross.map { |e| (e[0][1]).cross_with(e[1][1]) }
     #crossed = []
     #make sure to keep the top individuals
-    all_moves = {}
-    (crossed + individuals).each { |elem|
-      all_moves[elem.map.moves] = elem
-    }
-    all = all_moves.values
+    all = self.dedup_moves(crossed + individuals)
     all.sort! { |e1,e2| e2.map.score <=> e1.map.score }
     all.take(max)
   end
@@ -132,7 +189,7 @@ gen_size = ARGV.shift.to_i
 max_time = ARGV.shift.to_i
 
 max_time.times {
-  generation = BlindWatchMaker.next_generation(generation, gen_size, 6)
+  generation = BlindWatchMaker.next_generation(generation, gen_size, 5)
   #print average score:
   s_max = generation.max { |e1,e2| e1.map.score <=> e2.map.score }
   puts "max score: ", s_max.map.score
