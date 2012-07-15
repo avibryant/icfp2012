@@ -164,7 +164,10 @@ case class TileMap(state : TileState, robotState : RobotState,
     val dangerZone = robotState.pos.move(Up)
     // Make sure none of the new positions are in the dangerZone
     val newBotIsCrushed = writes.forall { _._2 != dangerZone } == false
-    copy(state = newState, rocks = newRocks, botIsCrushed = newBotIsCrushed)
+
+    val newWaterState = waterState.update
+
+    copy(state = newState, rocks = newRocks, botIsCrushed = newBotIsCrushed, waterState = newWaterState)
   }
 
   lazy val gameState : GameState = {
