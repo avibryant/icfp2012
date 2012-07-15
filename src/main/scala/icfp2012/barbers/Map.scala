@@ -82,10 +82,12 @@ object TileMap {
     }
 
     //Todo: extension-specific parsing of metadataTokens goes here
+    val water = WaterState.parse(metadataTokens)
 
     // We have enough to build the tileMap:
     new TileMap(ts, RobotState(Nil, List(pmap(Robot).head)),
-      pmap(Rock).toSet, Nil, pmap(Lambda).toSet, pmap(CLift)(0), false, false)
+      pmap(Rock).toSet, Nil, pmap(Lambda).toSet, pmap(CLift)(0), false, false,
+      water)
   }
 
 }
@@ -101,13 +103,15 @@ case object Aborted extends GameState
  */
 case class TileMap(state : TileState, robotState : RobotState,
   rocks : Set[Position], collectedLam : List[Position],
-  remainingLam : Set[Position], liftPos : Position, completed : Boolean, botIsCrushed : Boolean) {
+  remainingLam : Set[Position], liftPos : Position, completed : Boolean, botIsCrushed : Boolean,
+  waterState : WaterState) {
 
   override lazy val toString = {
     "map: \n" + state.toString + "\n" +
     "score: " + score.toString + "\n" +
     "move count: " + robotState.moves.size + "\n" +
-    "moves: " + robotState.moves.reverse.map { Move.charOf(_) }.mkString("") + "\n"
+    "moves: " + robotState.moves.reverse.map { Move.charOf(_) }.mkString("") + "\n" +
+    waterState.toString + "\n"
   }
 
   def move(mv : Move) : TileMap = moveRobot(mv).moveRocks
