@@ -19,7 +19,7 @@ case class Position(x : Int, y: Int) extends Ordered[Position] {
 
 case class RobotState(moves : List[Move], history : List[Position]) {
   // for trampolines:
-  def jump(mv : Move, p : Position) = RobotState(mv :: moves, pos :: history)
+  def jump(mv : Move, p : Position) = RobotState(mv :: moves, p :: history)
   def pos = history.head
   def move(mv : Move) = jump(mv, pos.move(mv))
   // Record the move, but don't actually move the bot (jump in place)

@@ -37,6 +37,8 @@ object Cell {
       case Lambda => 25
       case OLift => 500
       case Empty => -10000
+      case Trampoline(c) => 0 //TODO probably should be smarter
+      case Target(_) => -10000 //Same as a wall
     }
   }
 }
