@@ -124,12 +124,24 @@ class MonteCarloTree
     puts "Best moves: #{@best.moves}"
     puts "Tree size: #{@maps.size}"
     puts "Time elapsed: #{time_elapsed}"
+    puts "Iterations: #{@iterations}"
     puts "Moves/sec: #{(@moves.to_f / time_elapsed).to_i}"
-    puts "Iterations/sec: #{(@iterations.to_f / time_elapsed).to_i}"
   end
 
   def best
     @best
+  end
+
+  def weighted_rand(map)
+    cdf = []
+    acc = 0
+    total = map.values.inject(0){|a,b| a+b}
+    map.each do |v,w|
+      acc += w.to_f / total
+      cdf << [v, acc]
+    end
+    r = rand
+    cdf.find{|v,p| p >= r}[0]
   end
 end
 
