@@ -107,7 +107,7 @@ case object Aborted extends GameState
  * Immutable class representing the update/scoring rules of the 2012 contest
  */
 case class TileMap(state : TileState, robotState : RobotState, cellPositions: Map[Cell, Set[Position]],
-  collectedLam : List[Position], completed : Boolean, botIsCrushed : Boolean, waterState : WaterState)
+  collectedLam : List[Position], completed : Boolean, botIsCrushed : Boolean, waterState : WaterState) {
 
   override lazy val toString = {
     "map: \n" + state.toString + "\n" +
