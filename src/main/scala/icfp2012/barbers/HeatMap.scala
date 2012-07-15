@@ -4,22 +4,27 @@ object HeatMap {
   val NEG_INF = -10000
 }
 
+/**
+ * WARNING: here be mutation
+ */
 class HeatMap(map: TileMap){
   import HeatMap.NEG_INF
 
-  var cells = map.state.cells
+  def apply(pos : Position) = heatCellAt(pos).value
 
-  def apply(pos : Position) = {
-    state(pos.y)(pos.x).value
+  def heatCellAt(pos : Position) = state(pos.y)(pos.x)
+  def setCell(hmc : HeatMapCell) {
+    val newRow = state(hmc.pos.y).updated(hmc.pos.x, hmc)
+    state = state.updated(hmc.pos.y, newRow)
   }
 
-  var state = cells.zipWithIndex.map {
+  var state : IndexedSeq[IndexedSeq[HeatMapCell]] = map.state.cells.zipWithIndex.map {
     rowy =>
     val (row, y) = rowy
     row.zipWithIndex.map {
       cellx =>
       val (cell, x) = cellx
-      new HeatMapCell(cell, heatOf(cell), (x,y))
+      new HeatMapCell(cell, heatOf(cell), Position(x,y))
     }
   }
 
@@ -53,52 +58,55 @@ class HeatMap(map: TileMap){
     if ((iterations > 20) || (requiresUpdate.size == 0))
       return requiresUpdate.size == 0
 
-    var changed : Set[(HeatMapCell, (Int,Int), Set[HeatMapCell])] = Set.empty
-    requiresUpdate.foreach{
-        cell =>
-        val x = cell.x
-        val y = cell.y
-        val neighborPositions = List((x, y - 1), (x - 1, y), (x, y + 1), (x + 1, y))
-        val validNeighbors = neighborPositions
-          .filter{position : (Int, Int) =>
-            position._2 >= 0 && position._2 < state.size && position._1 >= 0 && position._1 < state(position._2).size
+    val changed = requiresUpdate
+      .foldLeft(Set[(HeatMapCell, Set[HeatMapCell])]()) { (changed, cell) =>
+        val validNeighbors = List(Down,Left,Up,Right)
+          .map { cell.pos.move(_) }
+          .filter{position =>
+            // Ignore positions out of the space:
+            position.y >= 0 &&
+            position.x >= 0 &&
+            position.y < state.size &&
+            position.x < state(position.y).size
           }
-          .map{ position => state(position._2)(position._1)}
+          .map{ heatCellAt(_) }
+
         val newCell = cell.update(validNeighbors)
-        if (cell.value != newCell.value) changed = changed ++ Set((newCell, (x,y), validNeighbors.toSet))
+        if (cell.value != newCell.value) {
+          changed + ((newCell, validNeighbors.toSet))
+        }
+        else {
+          changed
+        }
     }
-    changed.foreach {
-      change =>
-      val newRow = state(change._2._2).updated(change._2._1, change._1)
-      state = state.updated(change._2._2, newRow)
-    }
-    val changedNeighbors = changed.map{change => change._3}.flatten.toSet
+    // Now mutate:
+    changed.foreach { change => setCell(change._1) }
+
+    val changedNeighbors = changed.flatMap{ _._2 }.toSet
 
     furtherPopulate(changedNeighbors, iterations + 1)
   }
 }
 
-class HeatMapCell(cell : Cell, initialValue : Int, position : (Int, Int)){
+class HeatMapCell(val cell : Cell, val value : Int, val pos : Position){
   import HeatMap.NEG_INF
-  val value : Int = {initialValue}
+
   override lazy val toString : String = {
     if(value <= NEG_INF) " . " else "%3d".format(value)
   }
-  val x = {position._1}
-  val y = {position._2}
   def update(neighbors : List[HeatMapCell]) : HeatMapCell = {
     if (cell == Wall)
       //walls never change:
-      if( initialValue == NEG_INF) {
+      if( value == NEG_INF) {
         this
       }
       else {
         // Can't see how this would actually happen TODO: remove
-        new HeatMapCell(cell, NEG_INF, position)
+        new HeatMapCell(cell, NEG_INF, pos)
       }
     else if (cell == Rock)
-      new HeatMapCell(cell, (value :: neighbors.map{n => n.value - 5}).max, position)
+      new HeatMapCell(cell, (value :: neighbors.map{n => n.value - 5}).max, pos)
     else
-      new HeatMapCell(cell, (value :: neighbors.map{n => n.value - 1}).max, position)
+      new HeatMapCell(cell, (value :: neighbors.map{n => n.value - 1}).max, pos)
   }
 }

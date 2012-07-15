@@ -20,7 +20,18 @@ class TileState(state : IndexedSeq[IndexedSeq[Cell]]) {
 
   def cells = {state}
 
-  def colsRows : (Int,Int) = {
+  def contains(p : Position) : Boolean = {
+    val nonNeg = p.x >= 0 && p.y >= 0
+    if(nonNeg) {
+      val (cols, rows) = colsRows
+      p.x < cols && p.y < rows
+    }
+    else {
+      false
+    }
+  }
+
+  lazy val colsRows : (Int,Int) = {
     val rows = state.size
     val cols = state.map { _.size }.max
     (cols, rows)
@@ -333,7 +344,7 @@ case class TileMap(state : TileState, robotState : RobotState,
   lazy val totalLambdas = collectedLam.size + remainingLam.size
   lazy val progress = progressScore.toDouble / (totalLambdas * 75)
 
-  val validMoves = {
+  lazy val validMoves = {
     if(completed)
       List(Wait)
     else {
