@@ -1,0 +1,2 @@
+Look at Algo.scala to see how to write and run algorithms.  You'll need sbt 0.11.3 installed, java
+and that should be it.
