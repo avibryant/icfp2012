@@ -12,8 +12,23 @@ class HeatMap(map: TileMap){
     val (row, y) = rowy
     row.zipWithIndex.map {
       cellx =>
-      val (cell, x) = cellx 
-      new HeatMapCell(cell, Cell.heatOf(cell), (x,y))
+      val (cell, x) = cellx
+      new HeatMapCell(cell, heatOf(cell), (x,y))
+    }
+  }
+
+  def heatOf(c : Cell) : Int = {
+    c match {
+      case Robot => -10000
+      case Rock => -10000
+      case CLift => -10000
+      case Earth => -10000
+      case Wall => -10000
+      case Lambda => 25
+      case OLift => (map.totalLambdas * 25)
+      case Empty => -10000
+      case Trampoline(c) => 0 //TODO probably should be smarter
+      case Target(_) => -10000 //Same as a wall
     }
   }
 
@@ -25,10 +40,11 @@ class HeatMap(map: TileMap){
 
   def populate = {
     furtherPopulate(state.flatten.toSet, 0)
+    this
   }
 
   def furtherPopulate(requiresUpdate : Set[HeatMapCell], iterations : Int) : Boolean = {
-    if ((iterations > 20) || (requiresUpdate.size == 0)) 
+    if ((iterations > 20) || (requiresUpdate.size == 0))
       return requiresUpdate.size == 0
 
     var changed : Set[(HeatMapCell, (Int,Int), Set[HeatMapCell])] = Set.empty
@@ -38,7 +54,7 @@ class HeatMap(map: TileMap){
         val y = cell.y
         val neighborPositions : Set[(Int,Int)] = Set((x, y - 1), (x - 1, y), (x, y + 1), (x + 1, y))
         val validNeighbors = neighborPositions
-          .filter{position : (Int, Int) => 
+          .filter{position : (Int, Int) =>
             position._2 >= 0 && position._2 < state.size && position._1 >= 0 && position._1 < state(position._2).size
           }
           .map{ position => state(position._2)(position._1)}
@@ -46,7 +62,7 @@ class HeatMap(map: TileMap){
         if (cell.value != newCell.value) changed = changed ++ Set((newCell, (x,y), validNeighbors))
     }
     changed.foreach {
-      change => 
+      change =>
       val newRow = state(change._2._2).updated(change._2._1, change._1)
       state = state.updated(change._2._2, newRow)
     }

@@ -27,20 +27,6 @@ object Cell {
       case Target(c) => c
     }
   }
-  def heatOf(c : Cell) : Int = {
-    c match {
-      case Robot => -10000
-      case Rock => -10000
-      case CLift => -10000
-      case Earth => -10000
-      case Wall => -10000
-      case Lambda => 25
-      case OLift => 500
-      case Empty => -10000
-      case Trampoline(c) => 0 //TODO probably should be smarter
-      case Target(_) => -10000 //Same as a wall
-    }
-  }
 }
 
 sealed abstract class Cell

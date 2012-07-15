@@ -114,7 +114,6 @@ case class TileMap(state : TileState, robotState : RobotState,
   trampState : TrampolineState) {
 
   override lazy val toString = {
-    heatmap.populate
     "map: \n" + state.toString + "\n" +
     "score: " + score.toString + "\n" +
     "move count: " + robotState.moves.size + "\n" +
@@ -123,7 +122,7 @@ case class TileMap(state : TileState, robotState : RobotState,
     waterState.toString + "\n"
   }
 
-  val heatmap = new HeatMap(this)
+  lazy val heatmap = new HeatMap(this).populate
 
   def move(mv : Move) : TileMap = moveRobot(mv).moveRocks
 
@@ -325,8 +324,16 @@ case class TileMap(state : TileState, robotState : RobotState,
 
   //todo - add in a heatmap value
   lazy val progress : Double = {
-    (abortScore + heatmapScore).toDouble / ((collectedLam.size + remainingLam.size) * 75)
+    val progressScore = 
+      if(completed)
+        score
+      else
+        abortScore + (heatmapScore * 0.8)
+
+    progressScore.toDouble / (totalLambdas * 75)
   }
+
+  lazy val totalLambdas = collectedLam.size + remainingLam.size
 
   //todo use the heatmap to select and order these
   val validMoves = {
@@ -335,7 +342,8 @@ case class TileMap(state : TileState, robotState : RobotState,
     else {
       List(Left, Down, Right, Up).map{dir => (dir, heatmap(robotState.pos.move(dir)))}
         .sortBy(_._2)
-        .map(_._1) ++
+        .map(_._1)
+        .reverse ++
       List(Wait)
     }
   }
