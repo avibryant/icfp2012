@@ -1,6 +1,8 @@
 package icfp2012.barbers
 
 object Cell {
+  val trampolines = ('A' to 'I').map { c => (c, Trampoline(c)) }.toMap
+  val targets = ('0' to '9').map { c => (c, Target(c)) }.toMap
   val parser = Map('R' -> Robot,
         '*' -> Rock,
         'L' -> CLift,
@@ -10,7 +12,7 @@ object Cell {
         'O' -> OLift,
         ' ' -> Empty,
         'W' -> Beard,
-        '!' -> Razor)
+        '!' -> Razor) ++ trampolines ++ targets
 
   def parse(c : Char) : Cell = parser(c)
   def charOf(c : Cell) : Char = {
@@ -25,6 +27,8 @@ object Cell {
       case Empty => ' '
       case Beard => 'W'
       case Razor => '!'
+      case Trampoline(c) => c
+      case Target(c) => c
     }
   }
 }
@@ -40,4 +44,5 @@ case object OLift extends Cell
 case object Empty extends Cell
 case object Beard extends Cell
 case object Razor extends Cell
-
+case class Trampoline(c : Char) extends Cell
+case class Target(c : Char) extends Cell

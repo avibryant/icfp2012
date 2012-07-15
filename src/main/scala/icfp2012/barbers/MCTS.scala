@@ -39,7 +39,7 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
 
     //magic, and can be tweaked
     val C = 1.0 / math.sqrt(2.0)
-    val D = 1000.0
+    val D = 1
 
     def ucb = {
       val x = totalScore / count
@@ -67,9 +67,12 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
 
     def move = createChild(pickMove(tm.validMoves))
 
-    //todo : when validMoves is smarter, skew this to early items
-    def pickMove(moves : List[Move]) = moves(rand.nextInt(moves.size))
-    
+    //exponentially prefer earlier items in list
+    def pickMove(moves : List[Move]) = {
+      val n = moves.size
+      moves(n - 1 - math.log(rand.nextInt(math.pow(math.E, n).toInt) + 1).toInt)
+    }
+
     def score = tm.progress
 
     @tailrec
@@ -121,6 +124,8 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
 
         println("New solution:")
         println(solution)
+        println("Progress score: " + candidate.progressScore)
+        println("Move scores: " + candidate.moveScores)
         println("Elapsed time: " + (System.currentTimeMillis - startTime))
         println("Tree size: " + nodeCount)
         println("Moves/sec: " + (moveCount * 1000 / (System.currentTimeMillis - startTime)))
