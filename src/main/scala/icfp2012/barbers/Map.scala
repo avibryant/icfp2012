@@ -221,7 +221,7 @@ case class TileMap(state : TileState, robotState : RobotState,
               val newRockPos = newPos.move(Right)
               val movedTileState = emptiedTileState.updated(newRockPos, Rock)
               //Move the rocks
-              copy(state = emptiedTileState,
+              copy(state = movedTileState,
                 robotState = newRobotState,
                 rocks = (rocks - newPos) + newRockPos)
             }
@@ -233,7 +233,7 @@ case class TileMap(state : TileState, robotState : RobotState,
               val newRockPos = newPos.move(Left)
               val movedTileState = emptiedTileState.updated(newRockPos, Rock)
               //Move the rocks
-              copy(state = emptiedTileState,
+              copy(state = movedTileState,
                 robotState = newRobotState,
                 rocks = (rocks - newPos) + newRockPos)
             }
@@ -263,9 +263,13 @@ case class TileMap(state : TileState, robotState : RobotState,
       score
   }
 
+  //todo - add in a heatmap value
   lazy val progress : Double = {
     abortScore.toDouble / ((collectedLam.size + remainingLam.size) * 75)
   }
+
+  //todo use the heatmap to select and order these
+  val validMoves = List(Left, Down, Right, Up, Wait)
 }
 
 
