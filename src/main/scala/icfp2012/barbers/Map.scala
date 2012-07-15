@@ -24,7 +24,7 @@ class TileState(state : IndexedSeq[IndexedSeq[Cell]]) {
     (cols, rows)
   }
 
-  protected def allPositions : Seq[Position] = {
+  def allPositions : Seq[Position] = {
     val (cols, rows) = colsRows
     (0 until cols).flatMap { c =>
       (0 until rows).map { r => Position(c, r) }
@@ -257,9 +257,22 @@ case class TileMap(state : TileState, robotState : RobotState,
           case _ => invalidNext
         }
       }
+      case Target(_) => invalidNext //Targets are walls until used
+      case tramp@Trampoline(_) => {
+        // Move immediately to the target of this trampoline:
+        val jumpPos = positionsOf(getTargetFor(tramp)).head // there should be only one target
+        val newTrampState = emptiedTileState.updated(newPos, Empty) // Get the robot out of there:
+          .updated(jumpPos, Robot)
+        val newRobotState = robotState.jump(mv, jumpPos)
+        // TODO make sure any indices of Trampolines/Targets are updated.
+        copy(state = newTrampState, robotState = newRobotState)
+      }
       case _ => invalidNext
     }
   }
+  // These are TODOs until Lennon's merge:
+  def positionsOf(c : Cell) : Set[Position] = error("TODO")
+  def getTargetFor(tramp : Trampoline) : Target = error("TODO")
 
   lazy val score : Int = {
     val (multiplier, offset) = gameState match {

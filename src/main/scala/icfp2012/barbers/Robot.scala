@@ -18,15 +18,12 @@ case class Position(x : Int, y: Int) extends Ordered[Position] {
 }
 
 case class RobotState(moves : List[Move], history : List[Position]) {
+  // for trampolines:
+  def jump(mv : Move, p : Position) = RobotState(mv :: moves, pos :: history)
   def pos = history.head
-  def move(mv : Move) = {
-    val newPos = pos.move(mv)
-    RobotState(mv :: moves, newPos :: history)
-  }
-  // Record the move, but don't actually move the bot
-  def invalidMove(mv : Move) = {
-    RobotState(mv :: moves, pos :: history)
-  }
+  def move(mv : Move) = jump(mv, pos.move(mv))
+  // Record the move, but don't actually move the bot (jump in place)
+  def invalidMove(mv : Move) = jump(mv, pos)
   def isAborted : Boolean = moves.headOption.map { _ == Abort }.getOrElse(false)
 }
 
