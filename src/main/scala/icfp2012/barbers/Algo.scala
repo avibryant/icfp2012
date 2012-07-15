@@ -1,6 +1,7 @@
 package icfp2012.barbers
 
 import scala.annotation.tailrec
+import scala.collection.immutable.Queue
 
 /*
  * To run your algorithm:
@@ -31,11 +32,33 @@ object Algorithm {
 
   def main(args : Array[String]) {
     val alg = apply(args(0), args.tail)
-    println(solve(TileMap.parseStdin, alg))
+    println("-------------")
+    println("-   INPUT   -")
+    println("-------------")
+    val startTm = TileMap.parseStdin
+    println(startTm)
+    //Actually run here:
+    val finalTm = alg(startTm)
+    println("-------------")
+    println("- SOLUTION: -")
+    println("-------------")
+    println(finalTm)
   }
 
+}
+
+abstract class Algorithm(args : Array[String]) {
+  def apply(tm : TileMap) : TileMap
+}
+
+abstract class IterativeAlgorithm(args : Array[String]) extends Algorithm(args) {
+  def apply(tm : TileMap) : TileMap = solve(tm)
+
+  // Take a step, and return a list of next steps and algorithms to run.
+  def next(tm : TileMap) : (TileMap, IterativeAlgorithm)
+
   @tailrec
-  final def solve(tm : TileMap, a : Algorithm) : TileMap = {
+  final def solve(tm : TileMap, a : IterativeAlgorithm = this) : TileMap = {
     if (tm.gameState == Playing) {
       val (nt, na) = a.next(tm)
       solve(nt, na)
@@ -46,12 +69,7 @@ object Algorithm {
   }
 }
 
-abstract class Algorithm(args : Array[String]) {
-  // Take a step, and return the next algorithm (possibly this) to run
-  def next(tm : TileMap) : (TileMap, Algorithm)
-}
-
-class RandomMover(args : Array[String]) extends Algorithm(args) {
+class RandomMover(args : Array[String]) extends IterativeAlgorithm(args) {
   val r = new java.util.Random
   val moves = Vector(Left,Right,Up,Down)
 
@@ -59,5 +77,48 @@ class RandomMover(args : Array[String]) extends Algorithm(args) {
     val nextTm = tm.move(moves(r.nextInt(4)))
     println(nextTm)
     (nextTm, this)
+  }
+}
+
+class Greedy(args : Array[String]) extends Algorithm(args) {
+  val moves = List(Left,Right,Up,Down,Abort)
+
+  val topNMaps = args(0).toInt
+
+  def apply(tm : TileMap) : TileMap = breadthFirst(Queue(tm))
+
+  def childrenOf(tm : TileMap) : List[TileMap] = {
+    if(tm.gameState == Playing) {
+      moves.map { tm.move(_) }
+    }
+    else {
+      Nil
+    }
+  }
+
+  @tailrec
+  private def breadthFirst(q : Queue[TileMap],
+    top : List[TileMap] = List[TileMap](),
+    visited : Set[TileMap] = Set[TileMap]())
+    : TileMap = {
+    if (q.isEmpty) {
+      //We are done, now take the best TileMap:
+      top.maxBy { _.score }
+    }
+    else {
+      val qh = q.head
+      //println(qh)
+      // Obviously wasteful, but this is a demo:
+      val newTop = (qh :: top).sortBy { tm => -(tm.score) }.take(topNMaps)
+      val newToVisit = if (newTop != top) {
+        //We have just found a new possible best:
+        childrenOf(qh).filterNot { visited }
+      }
+      else {
+        //Nothing new, ignore the children:
+        Nil
+      }
+      breadthFirst(q.tail ++ newToVisit, newTop, visited + qh)
+    }
   }
 }
