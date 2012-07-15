@@ -2,9 +2,46 @@ require '../ext/fast_update'
 
 USE_ULTRA = ENV["ULTRA"]
 
-class FastMap  
-  def initialize(lines, state = nil, moves = "", lambdas = 0, total_lambdas = nil, robot = nil, lift = false, dead = false, aborted = false)
-    @lines = lines
+class FastMap
+  DEFAULT_METADATA = {
+    "Water" => 0,
+    "Flooding" => 0,
+    "Waterproof" => 10,
+    "TimeUnderWater" => 0,
+    "HeatMap" => {},
+    "TrampolinePositions" => {},
+    "TargetPositions" => {}
+  }.freeze
+
+  def self.parse_trampoline(k, v, metadata)
+    trampolines = (metadata["Trampolines"] ||= {})
+    src, dst = v.split(" targets ")
+    trampolines[src] = dst
+  end
+
+  def self.parse_metadata(lines)
+    metadata = {}
+    if i = lines.find_index("")
+      lines[i+1..-1].each do |md|
+        k,v = md.split($;, 2)
+        if k == "Trampoline"
+          parse_trampoline(k, v, metadata)
+        else
+          metadata[k] = v
+        end
+      end
+      lines = lines[0...i]
+    end
+    [lines, metadata]
+  end
+
+  def initialize(lines, state = nil, moves = "", lambdas = 0, total_lambdas = nil, robot = nil, lift = false, dead = false, aborted = false, metadata = nil)
+    if metadata.nil?
+      @lines, @metadata = FastMap.parse_metadata(lines)
+    else
+      @lines = lines
+      @metadata = metadata
+    end
     @state = state
     @moves = moves
     @lambdas = lambdas
@@ -58,7 +95,7 @@ class FastMap
       lines2, dead = FastUpdate.update(lines)
       state2 = nil
     end
-    self.class.new(lines2, state2, @moves + dir, @lambdas + lambdas, @total_lambdas, robot, lift, dead, aborted)
+    self.class.new(lines2, state2, @moves + dir, @lambdas + lambdas, @total_lambdas, robot, lift, dead, aborted, @metadata)
   end
 
   def find(char)
@@ -111,7 +148,7 @@ class FastMap
 
   def abort_score
     return @abort_score if @abort_score
-    
+
     if done?
       @abort_score = score
     else
@@ -166,7 +203,7 @@ class FastMap
     options << "D" if(pos[0] > @robot[0])
     options << "L" if(pos[1] < @robot[1])
     options << "R" if(pos[1] > @robot[1])
-    options[rand(options.size)] 
+    options[rand(options.size)]
   end
 
   def total_lambdas
