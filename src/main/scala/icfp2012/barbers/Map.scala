@@ -136,7 +136,8 @@ case class TileMap(state : TileState, robotState : RobotState,
   }
 
   lazy val numberOfMoves = robotState.moves.size
-  lazy val heatmap = new HeatMap(this).populate
+  // TODO: we can possibly do better if we use the previous heatmap
+  lazy val heatmap = { val init = HeatMap.init(this); HeatMap.populate(init) }
 
   def move(mv : Move) : TileMap = moveRobot(mv).growBeards.moveRocks
 
