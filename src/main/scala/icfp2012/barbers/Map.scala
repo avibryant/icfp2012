@@ -18,6 +18,8 @@ class TileState(state : IndexedSeq[IndexedSeq[Cell]]) {
     }
   }
 
+  def cells = {state}
+
   def colsRows : (Int,Int) = {
     val rows = state.size
     val cols = state.map { _.size }.max
@@ -81,13 +83,18 @@ object TileMap {
       (parts.head, parts.tail.toList)
     }
 
+    val cellPositions : Map[Cell, Set[Position]] = Map(
+      Rock -> pmap(Rock).toSet,
+      Lambda -> pmap(Lambda).toSet,
+      CLift -> pmap(CLift).toSet
+    )
+
     //Todo: extension-specific parsing of metadataTokens goes here
     val water = WaterState.parse(metadataTokens)
 
     // We have enough to build the tileMap:
     new TileMap(ts, RobotState(Nil, List(pmap(Robot).head)),
-      pmap(Rock).toSet, Nil, pmap(Lambda).toSet, pmap(CLift)(0), false, false,
-      water)
+      cellPositions, Nil, false, false, water)
   }
 
 }
@@ -101,20 +108,26 @@ case object Aborted extends GameState
 /*
  * Immutable class representing the update/scoring rules of the 2012 contest
  */
-case class TileMap(state : TileState, robotState : RobotState,
-  rocks : Set[Position], collectedLam : List[Position],
-  remainingLam : Set[Position], liftPos : Position, completed : Boolean, botIsCrushed : Boolean,
-  waterState : WaterState) {
+case class TileMap(state : TileState, robotState : RobotState, cellPositions: Map[Cell, Set[Position]],
+  collectedLam : List[Position], completed : Boolean, botIsCrushed : Boolean, waterState : WaterState) {
 
   override lazy val toString = {
+    heatmap.populate
     "map: \n" + state.toString + "\n" +
     "score: " + score.toString + "\n" +
     "move count: " + robotState.moves.size + "\n" +
     "moves: " + robotState.moves.reverse.map { Move.charOf(_) }.mkString("") + "\n" +
+    "heatmap: \n" + heatmap + "\n" + 
     waterState.toString + "\n"
   }
 
+  val heatmap = new HeatMap(this)
+
   def move(mv : Move) : TileMap = moveRobot(mv).moveRocks
+
+  lazy val rocks : Set[Position] = cellPositions(Rock)
+  lazy val remainingLam : Set[Position] = cellPositions(Lambda)
+  lazy val liftPos : Position = cellPositions(CLift).head
 
   protected def moveRocks : TileMap = {
     if (gameState != Playing) {
@@ -164,10 +177,11 @@ case class TileMap(state : TileState, robotState : RobotState,
     val dangerZone = robotState.pos.move(Up)
     // Make sure none of the new positions are in the dangerZone
     val newBotIsCrushed = writes.forall { _._2 != dangerZone } == false
-
+    val newCellPositions = cellPositions + (Rock -> newRocks)
     val newWaterState = waterState.update(robotState)
 
-    copy(state = newState, rocks = newRocks, botIsCrushed = newBotIsCrushed, waterState = newWaterState)
+    copy(state = newState, cellPositions = newCellPositions, 
+      botIsCrushed = newBotIsCrushed, waterState = newWaterState)
   }
 
   lazy val gameState : GameState = {
@@ -217,10 +231,12 @@ case class TileMap(state : TileState, robotState : RobotState,
         else {
           emptiedTileState
         }
+        val newCellPositions = cellPositions + (Lambda -> newRLam)
+
         copy(state = newState,
           robotState = newRobotState,
           collectedLam = newPos :: collectedLam,
-          remainingLam = newRLam)
+          cellPositions = newCellPositions)
       }
       case OLift => {
         copy(state = emptiedTileState,
@@ -235,10 +251,12 @@ case class TileMap(state : TileState, robotState : RobotState,
               // Move the rock right:
               val newRockPos = newPos.move(Right)
               val movedTileState = emptiedTileState.updated(newRockPos, Rock)
+              val newRocks = (rocks - newPos) + newRockPos
+              val newCellPositions = cellPositions + (Rock -> newRocks)
               //Move the rocks
               copy(state = movedTileState,
                 robotState = newRobotState,
-                rocks = (rocks - newPos) + newRockPos)
+                cellPositions = newCellPositions)
             }
             case _ => invalidNext
           }
@@ -247,10 +265,12 @@ case class TileMap(state : TileState, robotState : RobotState,
               // Move the rock to the left:
               val newRockPos = newPos.move(Left)
               val movedTileState = emptiedTileState.updated(newRockPos, Rock)
+              val newRocks = (rocks - newPos) + newRockPos
+              val newCellPositions = cellPositions + (Rock -> newRocks)
               //Move the rocks
               copy(state = movedTileState,
                 robotState = newRobotState,
-                rocks = (rocks - newPos) + newRockPos)
+                cellPositions = newCellPositions)
             }
             case _ => invalidNext
           }
@@ -293,13 +313,24 @@ case class TileMap(state : TileState, robotState : RobotState,
       score
   }
 
+  lazy val heatmapScore = heatmap(robotState.pos)
+
   //todo - add in a heatmap value
   lazy val progress : Double = {
-    abortScore.toDouble / ((collectedLam.size + remainingLam.size) * 75)
+    (abortScore + heatmapScore).toDouble / ((collectedLam.size + remainingLam.size) * 75)
   }
 
   //todo use the heatmap to select and order these
-  val validMoves = List(Left, Down, Right, Up, Wait)
+  val validMoves = {
+    if(completed)
+      List(Wait)
+    else {
+      List(Left, Down, Right, Up).map{dir => (dir, heatmap(robotState.pos.move(dir)))}
+        .sortBy(_._2)
+        .map(_._1) ++
+      List(Wait)
+    }
+  }
 }
 
 
