@@ -77,6 +77,12 @@ object TileMap {
 
 }
 
+abstract class GameState
+case object Playing extends GameState
+case object Winning extends GameState
+case object Losing extends GameState
+case object Aborted extends GameState
+
 /*
  * Immutable class representing the update/scoring rules of the 2012 contest
  */
@@ -93,7 +99,9 @@ case class TileMap(state : TileState, robotState : RobotState,
   def move(mv : Move) : TileMap = moveRobot(mv).moveRocks
 
   protected def moveRocks : TileMap = {
-    if (completed) return this
+    if (gameState != Playing) {
+      return this
+    }
 
     // These are the writes we need to do:
     val emptyAndRocks = List[(Position,Position)]()
@@ -138,10 +146,24 @@ case class TileMap(state : TileState, robotState : RobotState,
     copy(state = newState, rocks = newRocks)
   }
 
+  lazy val gameState : GameState = {
+    // If we have a rock above us, we are toast
+    if( completed ) {
+      Winning
+    }
+    else if (state(robotState.pos.move(Up)) == Rock) {
+      Losing
+    }
+    else if (robotState.isAborted) {
+      Aborted
+    }
+    else {
+      Playing
+    }
+  }
+
   protected def moveRobot(mv : Move) : TileMap = {
-    if (completed) return this
-    if (robotState.isAborted) {
-      // We ignore any movements after abort:
+    if (gameState != Playing) {
       return this
     }
 
@@ -153,20 +175,28 @@ case class TileMap(state : TileState, robotState : RobotState,
       .updated(robotState.pos, Empty)
       .updated(newPos, Robot)
 
+    lazy val invalidNext = {
+      copy(robotState = robotState.invalidMove(mv))
+    }
+
     newCell match {
-      case Empty => {
-        copy(state = emptiedTileState, robotState = newRobotState)
-      }
-      case Earth => {
+      case Empty | Earth => {
         copy(state = emptiedTileState, robotState = newRobotState)
       }
       case Lambda => {
         // Picked up a new Lambda:
-        copy(state = emptiedTileState,
+        val newRLam = remainingLam - newPos
+        val newState = if(newRLam.size == 0) {
+          //Open the lift:
+          emptiedTileState.updated(liftPos, OLift)
+        }
+        else {
+          emptiedTileState
+        }
+        copy(state = newState,
           robotState = newRobotState,
           collectedLam = newPos :: collectedLam,
-          remainingLam = remainingLam - newPos
-          )
+          remainingLam = newRLam)
       }
       case OLift => {
         copy(state = emptiedTileState,
@@ -186,7 +216,7 @@ case class TileMap(state : TileState, robotState : RobotState,
                 robotState = newRobotState,
                 rocks = (rocks - newPos) + newRockPos)
             }
-            case _ => this
+            case _ => invalidNext
           }
           case Left => state(newPos.move(Left)) match {
             case Empty => {
@@ -198,18 +228,22 @@ case class TileMap(state : TileState, robotState : RobotState,
                 robotState = newRobotState,
                 rocks = (rocks - newPos) + newRockPos)
             }
-            case _ => this
+            case _ => invalidNext
           }
-          case _ => this
+          case _ => invalidNext
         }
       }
-      case _ => this
+      case _ => invalidNext
     }
   }
 
-  def score : Int = {
-    collectedLam.size * 25 * (if (robotState.isAborted) 2 else 1) +
-      (if(completed) 50 else 0) -
+  lazy val score : Int = {
+    val multiplier = gameState match {
+      case Winning => 3
+      case Aborted => 2
+      case _ => 1
+    }
+    collectedLam.size * 25 * multiplier -
       robotState.moves.size
   }
 }
