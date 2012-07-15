@@ -30,7 +30,7 @@ class MonteCarloTree
     depth = 0
     until map.done? || depth > max_depth
       map = move(map)
-      if map.score_ratio + map.value > best.score_ratio + map.value
+      if map.score_ratio > best.score_ratio
         best = map
       end
       depth += 1
@@ -94,7 +94,7 @@ class MonteCarloTree
   end
 
   def expand(map, moves)
-    move = moves[0]
+    move = (map.best_moves & moves | moves)[0]
     next_map = map.move(move)
     @maps[next_map.moves] = next_map
     next_map
@@ -132,7 +132,6 @@ class MonteCarloTree
     @last_dump = Time.new.to_f
     puts
     puts "Best score: #{@best.score}"
-    # puts "Best value: #{@best.value}"
     puts "Best moves: #{@best.moves}"
     puts "Tree size: #{@maps.size}"
     puts "Time elapsed: #{time_elapsed}"

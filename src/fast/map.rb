@@ -21,7 +21,23 @@ class FastMap
   end
 
   def value
-    @heatmap[find('R').reverse]
+    @heatmap[fixed_find('R').reverse]
+  end
+
+  def fixed_find(char)
+    a = find(char)
+    [@lines.size - a[0] - 1, a[1]]
+  end
+
+  def best_moves
+    robot = fixed_find('R').reverse
+    moves = []
+    moves << ['U', @heatmap[[robot[0], robot[1] + 1]]]
+    moves << ['L', @heatmap[[robot[0] - 1, robot[1]]]]
+    moves << ['R', @heatmap[[robot[0] + 1, robot[1]]]]
+    moves << ['D', @heatmap[[robot[0], robot[1] - 1]]]
+    moves << ['W', @heatmap[robot]]
+    moves.sort{|a,b| b[1] <=> a[1]}.select{|a| a[1] > -10000}.map{|a| a[0] }
   end
 
   def lambdas

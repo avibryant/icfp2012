@@ -618,10 +618,10 @@ class Map
   end
 
   def get_heatmap
-    @metadata["HeatMap"]    
+    @metadata["HeatMap"]
   end
 
-  def alt_score_cells!(candidates=@cells.flatten)
+  def alt_score_cells_helper!(candidates=@cells.flatten)
     lambda_pos = @metadata["LambdaPositions"]
     if lambda_pos.empty?
       lambda_pos = @metadata["LiftPositions"]
@@ -638,7 +638,16 @@ class Map
         heatmap[[cell.x, cell.y]] = next_heat
       end
     end
-    alt_score_cells!(new_candidates.uniq) if new_candidates.size > 0
+    # alt_score_cells!(new_candidates.uniq) if new_candidates.size > 0
+    new_candidates.uniq
+  end
+
+  def alt_score_cells!
+    candidates = @cells.flatten
+    counter = 0
+    while candidates.size > 0 || (counter += 1) > 20
+      candidates = alt_score_cells_helper!(candidates)
+    end
   end
 
   def command_robot(command)
