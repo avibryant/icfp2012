@@ -95,10 +95,13 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
 
       //todo - also update the result of compact
       if(result.tm.abortScore > solution.score) {
-        if(result.tm.gameState == Playing)
+        if(result.tm.gameState == Winning)
           solution = compact(result.tm)
         else
           solution = result.tm.move(Abort)
+
+        println("New solution:")
+        println(solution)
       }
     }
     solution
