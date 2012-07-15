@@ -93,6 +93,7 @@ case class TileMap(state : TileState, robotState : RobotState,
   remainingLam : Set[Position], liftPos : Position, completed : Boolean, botIsCrushed : Boolean) {
 
   override lazy val toString = {
+    heatmap.populate
     "map: \n" + state.toString + "\n" +
     "score: " + score.toString + "\n" +
     "move count: " + robotState.moves.size + "\n" +
