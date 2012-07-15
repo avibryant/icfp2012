@@ -19,7 +19,7 @@ class HeatMap(map: TileMap){
     row.zipWithIndex.map {
       cellx =>
       val (cell, x) = cellx
-      new HeatMapCell(cell, heatOf(cell), (x,y))
+      new HeatMapCell(cell, heatOf(cell), (x,y), (x,y))
     }
   }
 
@@ -35,7 +35,7 @@ class HeatMap(map: TileMap){
       case Empty => NEG_INF
       case Beard => NEG_INF
       case Razor => 0
-      case Trampoline(c) => 0 //TODO probably should be smarter
+      case Trampoline(c) => NEG_INF //TODO probably should be smarter
       case Target(_) => NEG_INF //Same as a wall
     }
   }
@@ -83,7 +83,7 @@ class HeatMap(map: TileMap){
   }
 }
 
-class HeatMapCell(cell : Cell, initialValue : Int, position : (Int, Int)){
+class HeatMapCell(cell : Cell, initialValue : Int, position : (Int, Int), targetPosition: (Int, Int)) {
   import HeatMap.NEG_INF
   val value : Int = {initialValue}
   override lazy val toString : String = {
@@ -91,8 +91,8 @@ class HeatMapCell(cell : Cell, initialValue : Int, position : (Int, Int)){
   }
   val x = {position._1}
   val y = {position._2}
-  val nX = {x}
-  val nY = {y}
+  val nX = {targetPosition._1}
+  val nY = {targetPosition._2}
 
   def update(neighbors : List[HeatMapCell]) : HeatMapCell = {
     if (cell == Wall)
@@ -102,11 +102,11 @@ class HeatMapCell(cell : Cell, initialValue : Int, position : (Int, Int)){
       }
       else {
         // Can't see how this would actually happen TODO: remove
-        new HeatMapCell(cell, NEG_INF, position)
+        new HeatMapCell(cell, NEG_INF, position, targetPosition)
       }
     else if (cell == Rock)
-      new HeatMapCell(cell, (value :: neighbors.map{n => n.value - 5}).max, position)
+      new HeatMapCell(cell, (value :: neighbors.map{n => n.value - 5}).max, position, targetPosition)
     else
-      new HeatMapCell(cell, (value :: neighbors.map{n => n.value - 1}).max, position)
+      new HeatMapCell(cell, (value :: neighbors.map{n => n.value - 1}).max, position, targetPosition)
   }
 }
