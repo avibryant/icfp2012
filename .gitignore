@@ -3,3 +3,6 @@ maps/*/*.txt
 *.mv
 *.bundle
 *.o
+*.class
+project/target
+target

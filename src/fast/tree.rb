@@ -27,6 +27,7 @@ class Tree
             @best = new_map
           end
         else 
+          new_map.create_heatmap!
           new_queue << new_map
         end
      end
@@ -35,7 +36,7 @@ class Tree
   end
 
   def prune(n)
-    sorted_queue = @queue.shuffle.sort{|a,b| a.score <=> b.score}
+    sorted_queue = @queue.shuffle.sort{|a,b| a.progress <=> b.progress}
     if(sorted_queue.size> n)
       @queue = sorted_queue[-1 * n .. -1]
     end

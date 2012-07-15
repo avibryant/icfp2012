@@ -250,6 +250,17 @@ case class TileMap(state : TileState, robotState : RobotState,
     collectedLam.size * 25 * multiplier -
       robotState.moves.size
   }
+
+  lazy val abortScore : Int = {
+    if(gameState == Playing)
+      move(Abort).score
+    else
+      score
+  }
+
+  lazy val progress : Double = {
+    abortScore.toDouble / ((collectedLam.size + remainingLam.size) * 75)
+  }
 }
 
 
