@@ -35,7 +35,7 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
 
     def select : Node = {
       if(tm.gameState == Playing) {
-        if(untriedMoves == Nil)
+        if(untriedMoves == Nil || (children != Nil && math.random > c))
           children.maxBy(_.ucb).select
         else
           addChild(createChild(untriedMoves.head))
@@ -73,7 +73,7 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
     //exponentially prefer earlier items in list
     def pickMove(moves : List[Move]) = {
       val n = moves.size
-      if(math.random < c)
+      if(math.random < (c/3))
         moves(rand.nextInt(moves.size))
       else
         moves(0)

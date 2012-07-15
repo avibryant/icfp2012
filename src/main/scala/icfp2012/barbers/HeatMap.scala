@@ -112,7 +112,7 @@ class HeatMapCell(val cell : Cell, val value : Int, val pos : Position, val targ
         new HeatMapCell(cell, NEG_INF, pos, targetPos)
       }
     else if (cell == Rock)
-      new HeatMapCell(cell, (value :: neighbors.map{n => n.value - 5}).max, pos, targetPos)
+      new HeatMapCell(cell, (value :: neighbors.map{n => n.value - 10}).max, pos, targetPos)
     else
       new HeatMapCell(cell, (value :: neighbors.map{n => n.value - 1}).max, pos, targetPos)
   }

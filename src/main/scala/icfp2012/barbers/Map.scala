@@ -368,10 +368,10 @@ case class TileMap(state : TileState, robotState : RobotState,
         score
       else
         //todo these may want different weights
-        (abortScore.toDouble / 3) + (heatmapScore)
+        (abortScore.toDouble) + (heatmapScore / 3)
   }
 
-  def scoreRatio = (abortScore + heatmapScore).toDouble  / (totalLambdas * 75)
+  def scoreRatio = (abortScore + (heatmapScore* 0.8)).toDouble  / (totalLambdas * 75)
   //score.toDouble / (totalLambdas * 75)
 
   lazy val totalLambdas = collectedLam.size + remainingLam.size
@@ -382,6 +382,7 @@ case class TileMap(state : TileState, robotState : RobotState,
       List(Wait)
     else {
       List(Left, Down, Right, Up).map{dir => (dir, heatmap(robotState.pos.move(dir)))}
+        .filter(_._2 > -100)
         .sortBy(_._2)
         .map(_._1)
         .reverse ++
