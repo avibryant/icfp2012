@@ -307,10 +307,12 @@ case class TileMap(state : TileState, robotState : RobotState, cellPositions: Ma
       if(completed)
         score
       else
-        abortScore + (heatmapScore * 1.2)
+        abortScore + (heatmapScore * 0.8)
 
-    progressScore.toDouble / ((collectedLam.size + remainingLam.size) * 75)
+    progressScore.toDouble / (totalLambdas * 75)
   }
+
+  lazy val totalLambdas = collectedLam.size + remainingLam.size
 
   //todo use the heatmap to select and order these
   val validMoves = {

@@ -13,7 +13,20 @@ class HeatMap(map: TileMap){
     row.zipWithIndex.map {
       cellx =>
       val (cell, x) = cellx 
-      new HeatMapCell(cell, Cell.heatOf(cell), (x,y))
+      new HeatMapCell(cell, heatOf(cell), (x,y))
+    }
+  }
+
+  def heatOf(c : Cell) : Int = {
+    c match {
+      case Robot => -10000
+      case Rock => -10000
+      case CLift => -10000
+      case Earth => -10000
+      case Wall => -10000
+      case Lambda => 25
+      case OLift => (map.totalLambdas * 25)
+      case Empty => -10000
     }
   }
 
