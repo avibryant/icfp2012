@@ -18,6 +18,8 @@ class TileState(state : IndexedSeq[IndexedSeq[Cell]]) {
     }
   }
 
+  def cells = {state}
+
   def colsRows : (Int,Int) = {
     val rows = state.size
     val cols = state.map { _.size }.max
@@ -110,12 +112,16 @@ case class TileMap(state : TileState, robotState : RobotState, cellPositions: Ma
   collectedLam : List[Position], completed : Boolean, botIsCrushed : Boolean, waterState : WaterState) {
 
   override lazy val toString = {
+    heatmap.populate
     "map: \n" + state.toString + "\n" +
     "score: " + score.toString + "\n" +
     "move count: " + robotState.moves.size + "\n" +
     "moves: " + robotState.moves.reverse.map { Move.charOf(_) }.mkString("") + "\n" +
+    "heatmap: \n" + heatmap + "\n" + 
     waterState.toString + "\n"
   }
+
+  val heatmap = new HeatMap(this)
 
   def move(mv : Move) : TileMap = moveRobot(mv).moveRocks
 
@@ -294,13 +300,20 @@ case class TileMap(state : TileState, robotState : RobotState, cellPositions: Ma
       score
   }
 
+  lazy val heatmapScore = heatmap(robotState.pos)
+
   //todo - add in a heatmap value
   lazy val progress : Double = {
-    abortScore.toDouble / ((collectedLam.size + remainingLam.size) * 75)
+    (abortScore + heatmapScore).toDouble / ((collectedLam.size + remainingLam.size) * 75)
   }
 
   //todo use the heatmap to select and order these
-  val validMoves = List(Left, Down, Right, Up, Wait)
+  val validMoves = {
+    List(Left, Down, Right, Up).map{dir => (dir, heatmap(robotState.pos.move(dir)))}
+      .sortBy(_._2)
+      .map(_._1) ++
+    List(Wait)
+  }
 }
 
 
