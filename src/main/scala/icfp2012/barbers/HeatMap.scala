@@ -52,7 +52,9 @@ class HeatMap(map: TileMap){
         cell =>
         val x = cell.x
         val y = cell.y
-        val neighborPositions : Set[(Int,Int)] = Set((x, y - 1), (x - 1, y), (x, y + 1), (x + 1, y))
+        val nX = cell.nX
+        val nY = cell.nY
+        val neighborPositions : Set[(Int,Int)] = Set((nX, nY - 1), (nX - 1, nY), (nX, nY + 1), (nX + 1, nY))
         val validNeighbors = neighborPositions
           .filter{position : (Int, Int) =>
             position._2 >= 0 && position._2 < state.size && position._1 >= 0 && position._1 < state(position._2).size
@@ -79,12 +81,14 @@ class HeatMapCell(cell : Cell, initialValue : Int, position : (Int, Int)){
   }
   val x = {position._1}
   val y = {position._2}
+  val nX = {x}
+  val nY = {y}
   def update(neighbors : Set[HeatMapCell]) : HeatMapCell = {
-    if (cell == Wall)
-      new HeatMapCell(cell, -10000, position)
+    if (cell == Wall) 
+      new HeatMapCell(cell, -10000, position) 
     else if (cell == Rock)
       new HeatMapCell(cell, (Set(value) ++ neighbors.map{n => n.value - 5}).max, position)
-    else
+    else 
       new HeatMapCell(cell, (Set(value) ++ neighbors.map{n => n.value - 1}).max, position)
   }
 }
