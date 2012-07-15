@@ -10,7 +10,9 @@ object Cell {
         '#' -> Wall,
         '\\' -> Lambda,
         'O' -> OLift,
-        ' ' -> Empty) ++ trampolines ++ targets
+        ' ' -> Empty,
+        'W' -> Beard,
+        '!' -> Razor) ++ trampolines ++ targets
 
   def parse(c : Char) : Cell = parser(c)
   def charOf(c : Cell) : Char = {
@@ -23,6 +25,8 @@ object Cell {
       case Lambda => '\\'
       case OLift => 'O'
       case Empty => ' '
+      case Beard => 'W'
+      case Razor => '!'
       case Trampoline(c) => c
       case Target(c) => c
     }
@@ -38,5 +42,7 @@ case object Wall extends Cell
 case object Lambda extends Cell
 case object OLift extends Cell
 case object Empty extends Cell
+case object Beard extends Cell
+case object Razor extends Cell
 case class Trampoline(c : Char) extends Cell
 case class Target(c : Char) extends Cell

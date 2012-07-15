@@ -16,6 +16,13 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
   var moveCount = 0
   var nodeCount = 0
 
+  var solution : TileMap = null
+
+  //magic, and can be tweaked
+  val C = 1.0 / math.sqrt(2.0)
+  val D = 1
+  def c = (1.0 / (1 + math.exp(solution.scoreRatio)))
+
   class Node(val tm : TileMap, parent : Node) {
     var count = 0.0d
     var totalScore = 0.0d
@@ -37,15 +44,11 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
       }
     }
 
-    //magic, and can be tweaked
-    val C = 1.0 / math.sqrt(2.0)
-    val D = 1
-
     def ucb = {
       val x = totalScore / count
 
-      x + (C * math.sqrt(2.0 * math.log(parent.count) / count)) +
-       math.sqrt((totalScore2 - (count*x*x) + D) / count)
+      x + (c * math.sqrt(2.0 * math.log(parent.count) / count))
+      // + math.sqrt((totalScore2 - (count*x*x) + D) / count)
     }
 
     def createChild(mv : Move) = new Node(tm.move(mv), this)
@@ -105,7 +108,7 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
     val endTime = startTime + (1000 * maxTime)
 
     val root = new Node(tm, null)
-    var solution = tm
+    solution = tm
 
     while(System.currentTimeMillis < endTime) {
       val selection = root.select
@@ -124,6 +127,7 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
 
         println("New solution:")
         println(solution)
+        println("Temperature: " + c)
         println("Progress score: " + candidate.progressScore)
         println("Move scores: " + candidate.moveScores)
         println("Elapsed time: " + (System.currentTimeMillis - startTime))
