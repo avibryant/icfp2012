@@ -88,10 +88,11 @@ object TileMap {
     )
 
     //Todo: extension-specific parsing of metadataTokens goes here
+    val water = WaterState.parse(metadataTokens)
 
     // We have enough to build the tileMap:
     new TileMap(ts, RobotState(Nil, List(pmap(Robot).head)),
-      cellPositions, Nil, false, false)
+      cellPositions, Nil, false, false, water)
   }
 
 }
@@ -106,13 +107,14 @@ case object Aborted extends GameState
  * Immutable class representing the update/scoring rules of the 2012 contest
  */
 case class TileMap(state : TileState, robotState : RobotState, cellPositions: Map[Cell, Set[Position]],
-  collectedLam : List[Position], completed : Boolean, botIsCrushed : Boolean) {
+  collectedLam : List[Position], completed : Boolean, botIsCrushed : Boolean, waterState : WaterState)
 
   override lazy val toString = {
     "map: \n" + state.toString + "\n" +
     "score: " + score.toString + "\n" +
     "move count: " + robotState.moves.size + "\n" +
-    "moves: " + robotState.moves.reverse.map { Move.charOf(_) }.mkString("") + "\n"
+    "moves: " + robotState.moves.reverse.map { Move.charOf(_) }.mkString("") + "\n" +
+    waterState.toString + "\n"
   }
 
   def move(mv : Move) : TileMap = moveRobot(mv).moveRocks
@@ -170,7 +172,10 @@ case class TileMap(state : TileState, robotState : RobotState, cellPositions: Ma
     // Make sure none of the new positions are in the dangerZone
     val newBotIsCrushed = writes.forall { _._2 != dangerZone } == false
     val newCellPositions = cellPositions + (Rock -> newRocks)
-    copy(state = newState, cellPositions = newCellPositions, botIsCrushed = newBotIsCrushed)
+    val newWaterState = waterState.update(robotState)
+
+    copy(state = newState, cellPositions = newCellPositions, 
+      botIsCrushed = newBotIsCrushed, waterState = newWaterState)
   }
 
   lazy val gameState : GameState = {
@@ -178,7 +183,7 @@ case class TileMap(state : TileState, robotState : RobotState, cellPositions: Ma
     if( completed ) {
       Winning
     }
-    else if (botIsCrushed) {
+    else if (botIsCrushed || waterState.botIsDrowned) {
       Losing
     }
     else if (robotState.isAborted) {
@@ -271,13 +276,15 @@ case class TileMap(state : TileState, robotState : RobotState, cellPositions: Ma
   }
 
   lazy val score : Int = {
-    val multiplier = gameState match {
-      case Winning => 3
-      case Aborted => 2
-      case _ => 1
+    val (multiplier, offset) = gameState match {
+      case Winning => (3, 0)
+      case Aborted => (2, 1)
+      case _ => (1, 0)
     }
+
     collectedLam.size * 25 * multiplier -
-      robotState.moves.size
+      robotState.moves.size +
+      offset
   }
 
   lazy val abortScore : Int = {
