@@ -43,6 +43,7 @@ object Algorithm {
     println("- SOLUTION: -")
     println("-------------")
     println(finalTm)
+    println(finalTm.score.toString + "\t" + finalTm.robotState.moves.size)
   }
 
 }
