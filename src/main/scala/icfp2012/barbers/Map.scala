@@ -120,7 +120,7 @@ case class TileMap(state : TileState, robotState : RobotState, cellPositions: Ma
     waterState.toString + "\n"
   }
 
-  def move(mv : Move) : TileMap = moveRobot(mv).moveRocks
+  def move(mv : Move) : TileMap = moveRobot(mv).growBeards.moveRocks
 
   lazy val numberOfMoves = robotState.moves.size
 
@@ -134,7 +134,14 @@ case class TileMap(state : TileState, robotState : RobotState, cellPositions: Ma
       return this
     }
 
-    var newBeards = beardPos.flatMap(_.neighbors8)
+    val (cols, rows) = state.colsRows
+
+    var newBeards = beardPos ++ beardPos.flatMap { pos =>
+      pos.neighbors8.filter { n =>
+        n.x >= 0 && n.x < cols && n.y >= 0 && n.y < rows && state(n) == Empty
+      }
+    }
+
     var newState = newBeards.foldLeft(state) { (s, pos) => s.updated(pos, Beard) }
     var newCellPositions = cellPositions + (Beard -> newBeards)
     copy(state = newState, cellPositions = newCellPositions)
