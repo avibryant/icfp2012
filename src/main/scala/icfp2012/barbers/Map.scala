@@ -76,25 +76,25 @@ object TileMap {
       // We read from bottom to top, so we must reverse
       .reverse)
     // Look for the robot, rocks, lambdas and closed lift:
-    val pmap = ts.positionMap(Set(Robot, Rock, Lambda, CLift))
+    val targetSet = Cell.targets.values.toSet
+    val trampSet = Cell.trampolines.values.toSet
+    val pmap = ts.positionMap(Set(Robot, Rock, Lambda, CLift) ++ targetSet ++ trampSet)
 
     val metadataTokens = linesSeq.drop(metadataIndex+1).map {line =>
       val parts = line.split(" ")
       (parts.head, parts.tail.toList)
     }
-
-    val cellPositions : Map[Cell, Set[Position]] = Map(
-      Rock -> pmap(Rock).toSet,
-      Lambda -> pmap(Lambda).toSet,
-      CLift -> pmap(CLift).toSet
-    )
+    // These are the ones we don't track in cellPositions:
+    val untrackedKeys = Set(Robot)
+    val cellPositions : Map[Cell, Set[Position]] = (pmap -- untrackedKeys).mapValues { _.toSet }
 
     //Todo: extension-specific parsing of metadataTokens goes here
     val water = WaterState.parse(metadataTokens)
+    val tramps = TrampolineState.parse(metadataTokens)
 
     // We have enough to build the tileMap:
     new TileMap(ts, RobotState(Nil, List(pmap(Robot).head)),
-      cellPositions, Nil, false, false, water)
+      cellPositions, Nil, false, false, water, tramps)
   }
 
 }
@@ -108,15 +108,17 @@ case object Aborted extends GameState
 /*
  * Immutable class representing the update/scoring rules of the 2012 contest
  */
-case class TileMap(state : TileState, robotState : RobotState, cellPositions: Map[Cell, Set[Position]],
-  collectedLam : List[Position], completed : Boolean, botIsCrushed : Boolean, waterState : WaterState) {
+case class TileMap(state : TileState, robotState : RobotState,
+  cellPositions: Map[Cell, Set[Position]], collectedLam : List[Position],
+  completed : Boolean, botIsCrushed : Boolean, waterState : WaterState,
+  trampState : TrampolineState) {
 
   override lazy val toString = {
     "map: \n" + state.toString + "\n" +
     "score: " + score.toString + "\n" +
     "move count: " + robotState.moves.size + "\n" +
     "moves: " + robotState.moves.reverse.map { Move.charOf(_) }.mkString("") + "\n" +
-    "heatmap: \n" + heatmap + "\n" + 
+    "heatmap: \n" + heatmap + "\n" +
     waterState.toString + "\n"
   }
 
@@ -179,7 +181,7 @@ case class TileMap(state : TileState, robotState : RobotState, cellPositions: Ma
     val newCellPositions = cellPositions + (Rock -> newRocks)
     val newWaterState = waterState.update(robotState)
 
-    copy(state = newState, cellPositions = newCellPositions, 
+    copy(state = newState, cellPositions = newCellPositions,
       botIsCrushed = newBotIsCrushed, waterState = newWaterState)
   }
 
@@ -275,6 +277,25 @@ case class TileMap(state : TileState, robotState : RobotState, cellPositions: Ma
           }
           case _ => invalidNext
         }
+      }
+      case Target(_) => invalidNext //Targets are walls until used
+      case tramp@Trampoline(_) => {
+        // Move immediately to the target of this trampoline:
+        val target = trampState.targetFor(tramp)
+        val jumpPos = cellPositions(target).head // there should be only one target
+        val (invalidTramps, newTrampState) = trampState.jumpOn(tramp)
+        // Invalidate the trampolines
+        val newState = invalidTramps.foldLeft(state) { (oldstate, tramp) =>
+            oldstate.updated(cellPositions(tramp).head, Empty)
+          }
+          // Move the robot:
+          .updated(robotState.pos, Empty)
+          .updated(jumpPos, Robot)
+        // Remove the target and invalidated tramps
+        val newCellPositions = (cellPositions - target) -- invalidTramps
+        val newRobotState = robotState.jump(mv, jumpPos)
+        copy(state = newState, robotState = newRobotState,
+          trampState = newTrampState, cellPositions = newCellPositions)
       }
       case _ => invalidNext
     }

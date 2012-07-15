@@ -98,6 +98,7 @@ class Greedy(args : Array[String]) extends Algorithm(args) {
   val moves = List(Left,Right,Up,Down,Abort)
 
   val topNMaps = args(0).toInt
+  val animate = if (args.size > 1) args(1).toBoolean else false
 
   def apply(tm : TileMap) : TileMap = breadthFirst(Queue(tm))
 
@@ -126,6 +127,10 @@ class Greedy(args : Array[String]) extends Algorithm(args) {
       val newTop = (qh :: top).sortBy { tm => -(tm.score) }.take(topNMaps)
       val newToVisit = if (newTop != top) {
         //We have just found a new possible best:
+        // print it:
+        if (animate) {
+          println(qh)
+        }
         childrenOf(qh).filterNot { visited }
       }
       else {
