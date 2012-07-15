@@ -12,6 +12,7 @@ class MonteCarloTree
     @last_dump = @start_time = Time.new.to_f
     @best = root
     @moves = 0
+    @iterations = 0
   end
 
   def time_elapsed
@@ -23,6 +24,7 @@ class MonteCarloTree
   end
 
   def iterate(max_depth)
+    @iterations += 1
     map = pick_map(@root)
     best = map
 
@@ -123,6 +125,7 @@ class MonteCarloTree
     puts "Tree size: #{@maps.size}"
     puts "Time elapsed: #{time_elapsed}"
     puts "Moves/sec: #{(@moves.to_f / time_elapsed).to_i}"
+    puts "Iterations/sec: #{(@iterations.to_f / time_elapsed).to_i}"
   end
 
   def best
@@ -134,7 +137,14 @@ map = FastMap.new(STDIN.read.split("\n"))
 map.create_heatmap!
 tree = MonteCarloTree.new(map)
 max_time = ARGV.shift.to_i
+if max_time == 0
+  max_time = 60
+end
+depth_ratio = ARGV.shift.to_i
+if depth_ratio == 0
+  depth_ratio = 5
+end
 
 while tree.time_elapsed < max_time
-  tree.iterate(map.total_lambdas * 5)
+  tree.iterate(map.total_lambdas * depth_ratio)
 end
