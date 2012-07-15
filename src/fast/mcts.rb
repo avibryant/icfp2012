@@ -24,7 +24,6 @@ class MonteCarloTree
 
   def iterate(max_depth)
     map = pick_map(@root)
- #   puts map.moves
     best = map
 
     depth = 0
@@ -56,21 +55,18 @@ class MonteCarloTree
       @squared_scores[p] += (best.score_ratio * best.score_ratio)
     end
  
-    if time_since_last_dump > 1
+    if time_since_last_dump > 10
       dump
     end
   end
 
   def move(map)
     @moves += 1
-    if rand < 0.1
-      m = map.move("W")
-    else
-      m = map.move(MOVES[rand(MOVES.size - 1)])
-    end
-    if m.lambdas < map.lambdas
-      m.create_heatmap!
-    end
+    map.create_heatmap!
+    best_moves = map.best_moves | MOVES
+    n = best_moves.size
+    mv = best_moves[n - 1 - Math.log(rand(Math::E ** n) + 1).to_i]
+    m = map.move(mv)
     m
   end
 

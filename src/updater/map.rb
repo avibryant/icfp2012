@@ -623,7 +623,7 @@ class Map
 
   def alt_score_cells_helper!(candidates=@cells.flatten)
     lambda_pos = @metadata["LambdaPositions"]
-    if lambda_pos.empty?
+    if !lambda_pos || lambda_pos.empty?
       lambda_pos = @metadata["LiftPositions"]
     end
 

@@ -36,7 +36,7 @@ class FastMap
     moves << ['L', @heatmap[[robot[0] - 1, robot[1]]]]
     moves << ['R', @heatmap[[robot[0] + 1, robot[1]]]]
     moves << ['D', @heatmap[[robot[0], robot[1] - 1]]]
-    moves << ['W', @heatmap[robot]]
+    moves << ['W', 0]
     moves.sort{|a,b| b[1] <=> a[1]}.select{|a| a[1] > -10000}.map{|a| a[0] }
   end
 
@@ -218,10 +218,21 @@ if __FILE__ == $0
   map = FastMap.new(STDIN.read.split("\n"))
   puts map.to_s
 
-  ARGV[0].each_char do |m|
-    puts m
-    map = map.move(m)
-    puts map.to_s
-    puts "Direction to NT: #{map.direction_to(map.nearest_target)}"
+  if ARGV[0]
+    ARGV[0].each_char do |m|
+      puts m
+      map = map.move(m)
+      puts map.to_s
+      map.create_heatmap!
+      puts "Best moves: #{map.best_moves.join}"
+    end
+  else
+    until map.done?
+      map.create_heatmap!
+      m = map.best_moves[0]
+      map = map.move(m)
+      puts m
+      puts map.to_s
+    end
   end
 end
