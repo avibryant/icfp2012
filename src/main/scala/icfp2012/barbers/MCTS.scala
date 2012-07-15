@@ -93,17 +93,21 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
 
     val root = new Node(tm, null)
     var solution = tm
+
     while(System.currentTimeMillis < endTime) {
-      val result = root.select.simulate
-      //todo - try updating just the select vs. the simulate result
+      val selection = root.select
+      val result = selection.simulate
+      //todo - try updating just the selection vs. the simulate result
       result.update(result.score)
 
-      //todo - also update the result of compact
-      if(result.tm.abortScore > solution.score) {
-        if(result.tm.gameState == Winning)
-          solution = compact(result.tm)
+      var candidate = result.tm
+      if(candidate.abortScore > solution.score) {
+        if(candidate.gameState == Winning)
+          solution = compact(root.tm, candidate)
         else
-          solution = result.tm.move(Abort)
+          solution = candidate.move(Abort)
+
+        //todo - if compacted, create nodes for and update solution?
 
         println("New solution:")
         println(solution)
@@ -113,7 +117,25 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
     solution
   }
 
-  //todo
-  def compact(tm : TileMap) = tm
+  @tailrec
+  final def compact(root : TileMap, tm : TileMap) : TileMap = {
+    var best = tm
+    val movesWithIndex = tm.robotState.moves.reverse.zipWithIndex
+    movesWithIndex.foreach { case (m, i) => {
+      var step = root
+      movesWithIndex.foreach { case(n, j) => {
+        if(i != j)
+          step = step.move(n)
+      }}
+
+      if(step.score >= best.score)
+        best = step
+    }}
+
+    if(best != tm)
+      compact(root, best)
+    else
+      tm
+  }
 }
 
