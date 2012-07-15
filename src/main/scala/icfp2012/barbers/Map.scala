@@ -72,7 +72,7 @@ object TileMap {
     val pmap = ts.positionMap(Set(Robot, Rock, Lambda, CLift))
     // We have enough to build the tileMap:
     new TileMap(ts, RobotState(Nil, List(pmap(Robot).head)),
-      pmap(Rock).toSet, Nil, pmap(Lambda).toSet, pmap(CLift)(0), false)
+      pmap(Rock).toSet, Nil, pmap(Lambda).toSet, pmap(CLift)(0), false, false)
   }
 
 }
@@ -88,7 +88,7 @@ case object Aborted extends GameState
  */
 case class TileMap(state : TileState, robotState : RobotState,
   rocks : Set[Position], collectedLam : List[Position],
-  remainingLam : Set[Position], liftPos : Position, completed : Boolean) {
+  remainingLam : Set[Position], liftPos : Position, completed : Boolean, botIsCrushed : Boolean) {
 
   override lazy val toString = {
     "map: \n" + state.toString + "\n" +
@@ -144,7 +144,10 @@ case class TileMap(state : TileState, robotState : RobotState,
         .updated(er._1, Empty)
         .updated(er._2, Rock)
     }
-    copy(state = newState, rocks = newRocks)
+    val dangerZone = robotState.pos.move(Up)
+    // Make sure none of the new positions are in the dangerZone
+    val newBotIsCrushed = writes.forall { _._2 != dangerZone } == false
+    copy(state = newState, rocks = newRocks, botIsCrushed = newBotIsCrushed)
   }
 
   lazy val gameState : GameState = {
@@ -152,7 +155,7 @@ case class TileMap(state : TileState, robotState : RobotState,
     if( completed ) {
       Winning
     }
-    else if (state(robotState.pos.move(Up)) == Rock) {
+    else if (botIsCrushed) {
       Losing
     }
     else if (robotState.isAborted) {
