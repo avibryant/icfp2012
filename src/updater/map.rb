@@ -79,7 +79,7 @@ end
 
 class Wall < Cell
   def get_heatmap_value(current, distance)
-    -1
+    -10000
   end
 end
 
@@ -618,7 +618,13 @@ class Map
     end
   end
 
+  def get_heatmap
+    @metadata["HeatMap"]    
+  end
+
   def alt_score_cells!(candidates=@cells.flatten)
+    puts "alt"
+    puts @metadata["HeatMap"]
     lambda_pos = @metadata["LambdaPositions"]
     if lambda_pos.empty?
       lambda_pos = @metadata["LiftPositions"]

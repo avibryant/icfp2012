@@ -132,10 +132,10 @@ class MonteCarloTree
   end
 end
 
-map = FastMap.new(STDIN.read.split("\n"))
-tree = MonteCarloTree.new(map)
-max_time = ARGV.shift.to_i
+# map = FastMap.new(STDIN.read.split("\n"))
+# tree = MonteCarloTree.new(map)
+# max_time = ARGV.shift.to_i
 
-while tree.time_elapsed < max_time
-  tree.iterate(map.total_lambdas * 5)
-end
+# while tree.time_elapsed < max_time
+#   tree.iterate(map.total_lambdas * 5)
+# end

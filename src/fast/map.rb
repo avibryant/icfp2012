@@ -1,4 +1,5 @@
 require '../ext/fast_update'
+require '../updater/map'
 
 USE_ULTRA = ENV["ULTRA"]
 
@@ -17,6 +18,18 @@ class FastMap
     if !state && USE_ULTRA
       @lines, @state = FastUpdate.ultra_update(@lines, @state)
     end
+  end
+
+  def value
+    location = find('R')
+  end
+  
+  def create_heatmap!
+    
+  end
+
+  def heatmap
+
   end
 
   DIR_MAP =
