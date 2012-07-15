@@ -44,7 +44,7 @@ class MonteCarloTree
         dump
     end
 
-    moves = map.moves
+    moves = best.moves
     (0...moves.size).to_a.reverse.each do |i|
       parent_moves = moves[0..i]
       @counts[parent_moves] += 1
@@ -63,11 +63,9 @@ class MonteCarloTree
 
   def move(map)
     if rand < 0.1
-      map.move(MOVES[rand(MOVES.size)])
+      map.move("W")
     else
-      nt = map.nearest_target
-      dir = map.direction_to(nt)
-      map.move(dir)
+      map.move(MOVES[rand(MOVES.size - 1)])
     end
   end
 
