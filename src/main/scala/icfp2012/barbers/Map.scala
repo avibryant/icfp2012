@@ -307,7 +307,7 @@ case class TileMap(state : TileState, robotState : RobotState, cellPositions: Ma
       if(completed)
         score
       else
-        abortScore + heatmapScore
+        abortScore + (heatmapScore * 1.2)
 
     progressScore.toDouble / ((collectedLam.size + remainingLam.size) * 75)
   }
