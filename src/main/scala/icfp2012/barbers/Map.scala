@@ -1,5 +1,9 @@
 package icfp2012.barbers
 
+/**
+ * Immutable object strictly representing the cell-map, no rules for movement
+ * or scoring
+ */
 class TileState(state : IndexedSeq[IndexedSeq[Cell]]) {
   def apply(p : Position) : Cell = {
     if (p.y < state.size && p.y >= 0) {
@@ -20,13 +24,14 @@ class TileState(state : IndexedSeq[IndexedSeq[Cell]]) {
     (cols, rows)
   }
 
-  def allPositions : Seq[Position] = {
+  protected def allPositions : Seq[Position] = {
     val (cols, rows) = colsRows
     (0 until cols).flatMap { c =>
       (0 until rows).map { r => Position(c, r) }
     }
   }
 
+  // Where are the given cell types to be found?
   def positionMap(types : Set[Cell]) : Map[Cell, Seq[Position]] = {
     allPositions.filter { p => types(apply(p)) }
       .groupBy { apply }
@@ -79,7 +84,11 @@ case class TileMap(state : TileState, robotState : RobotState,
   rocks : Set[Position], collectedLam : List[Position],
   remainingLam : Set[Position], liftPos : Position, completed : Boolean) {
 
-  override def toString = state.toString
+  override def toString = {
+    "map: \n" + state.toString + "\n" +
+    "score: " + score.toString + "\n" +
+    "moves: " + robotState.moves.size + "\n"
+  }
 
   def move(mv : Move) : TileMap = moveRobot(mv).moveRocks
 
@@ -131,6 +140,10 @@ case class TileMap(state : TileState, robotState : RobotState,
 
   protected def moveRobot(mv : Move) : TileMap = {
     if (completed) return this
+    if (robotState.isAborted) {
+      // We ignore any movements after abort:
+      return this
+    }
 
     val newRobotState = robotState.move(mv)
     val newPos = newRobotState.pos
@@ -194,7 +207,11 @@ case class TileMap(state : TileState, robotState : RobotState,
     }
   }
 
-  def score : Int = -1
+  def score : Int = {
+    collectedLam.size * 25 * (if (robotState.isAborted) 2 else 1) +
+      (if(completed) 50 else 0) -
+      robotState.moves.size
+  }
 }
 
 

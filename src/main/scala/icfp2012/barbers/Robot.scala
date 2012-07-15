@@ -23,6 +23,7 @@ case class RobotState(moves : List[Move], history : List[Position]) {
     val newPos = pos.move(mv)
     RobotState(mv :: moves, newPos :: history)
   }
+  def isAborted : Boolean = moves.headOption.map { _ == Abort }.getOrElse(false)
 }
 
 object Move {
