@@ -319,7 +319,8 @@ case class TileMap(state : TileState, robotState : RobotState, cellPositions: Ma
     else {
       List(Left, Down, Right, Up).map{dir => (dir, heatmap(robotState.pos.move(dir)))}
         .sortBy(_._2)
-        .map(_._1) ++
+        .map(_._1)
+        .reverse ++
       List(Wait)
     }
   }
