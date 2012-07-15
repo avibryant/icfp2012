@@ -27,6 +27,8 @@ class HeatMap(map: TileMap){
       case Lambda => 25
       case OLift => (map.totalLambdas * 25)
       case Empty => -10000
+      case Beard => -10000
+      case Razor => 0
       case Trampoline(c) => 0 //TODO probably should be smarter
       case Target(_) => -10000 //Same as a wall
     }

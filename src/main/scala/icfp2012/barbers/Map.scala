@@ -88,14 +88,6 @@ object TileMap {
     val untrackedKeys = Set(Robot)
     val cellPositions : Map[Cell, Set[Position]] = (pmap -- untrackedKeys).mapValues { _.toSet }
 
-    val cellPositions : Map[Cell, Set[Position]] = Map(
-      Rock -> pmap(Rock).toSet,
-      Lambda -> pmap(Lambda).toSet,
-      CLift -> pmap(CLift).toSet,
-      Beard -> pmap(Beard).toSet,
-      Razor -> pmap(Razor).toSet
-    )
-
     //Todo: extension-specific parsing of metadataTokens goes here
     val water = WaterState.parse(metadataTokens)
     val tramps = TrampolineState.parse(metadataTokens)
@@ -140,8 +132,8 @@ case class TileMap(state : TileState, robotState : RobotState,
   lazy val rocks : Set[Position] = cellPositions(Rock)
   lazy val remainingLam : Set[Position] = cellPositions(Lambda)
   lazy val liftPos : Position = cellPositions(CLift).head
-  lazy val beardPos : Set[Position] = cellPositions(Beard)
-  lazy val razorPos : Set[Position] = cellPositions(Razor)
+  lazy val beardPos : Set[Position] = cellPositions.getOrElse(Beard, Set[Position]())
+  lazy val razorPos : Set[Position] = cellPositions.getOrElse(Razor, Set[Position]())
 
   protected def growBeards : TileMap = {
     if (beardPos.isEmpty || numberOfMoves % beardGrowthRate != 0) {
