@@ -622,8 +622,6 @@ class Map
   end
 
   def alt_score_cells!(candidates=@cells.flatten)
-    puts "alt"
-    puts @metadata["HeatMap"]
     lambda_pos = @metadata["LambdaPositions"]
     if lambda_pos.empty?
       lambda_pos = @metadata["LiftPositions"]

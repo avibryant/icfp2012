@@ -21,15 +21,26 @@ class FastMap
   end
 
   def value
-    location = find('R')
+    @heatmap[find('R').reverse]
+  end
+
+  def lambdas
+    @lambdas
   end
   
   def create_heatmap!
-    
+    m = Parser::parse(to_s)
+    m.alt_score_cells!
+    @heatmap = m.get_heatmap
   end
 
   def heatmap
+    @heatmap
+  end
 
+  def set_heatmap(hm)
+    @heatmap = hm
+    return self
   end
 
   DIR_MAP =
@@ -71,7 +82,7 @@ class FastMap
       lines2, dead = FastUpdate.update(lines)
       state2 = nil
     end
-    self.class.new(lines2, state2, @moves + dir, @lambdas + lambdas, @total_lambdas, robot, lift, dead, aborted)
+    self.class.new(lines2, state2, @moves + dir, @lambdas + lambdas, @total_lambdas, robot, lift, dead, aborted).set_heatmap(heatmap)
   end
 
   def find(char)

@@ -30,7 +30,7 @@ class MonteCarloTree
     depth = 0
     until map.done? || depth > max_depth
       map = move(map)
-      if map.score_ratio > best.score_ratio
+      if map.score_ratio + map.value > best.score_ratio + map.value
         best = map
       end
       depth += 1
@@ -64,10 +64,14 @@ class MonteCarloTree
   def move(map)
     @moves += 1
     if rand < 0.1
-      map.move("W")
+      m = map.move("W")
     else
-      map.move(MOVES[rand(MOVES.size - 1)])
+      m = map.move(MOVES[rand(MOVES.size - 1)])
     end
+    if m.lambdas < map.lambdas
+      m.create_heatmap!
+    end
+    m
   end
 
   def pick_map(map)
@@ -128,6 +132,7 @@ class MonteCarloTree
     @last_dump = Time.new.to_f
     puts
     puts "Best score: #{@best.score}"
+    # puts "Best value: #{@best.value}"
     puts "Best moves: #{@best.moves}"
     puts "Tree size: #{@maps.size}"
     puts "Time elapsed: #{time_elapsed}"
@@ -139,10 +144,11 @@ class MonteCarloTree
   end
 end
 
-# map = FastMap.new(STDIN.read.split("\n"))
-# tree = MonteCarloTree.new(map)
-# max_time = ARGV.shift.to_i
+map = FastMap.new(STDIN.read.split("\n"))
+map.create_heatmap!
+tree = MonteCarloTree.new(map)
+max_time = ARGV.shift.to_i
 
-# while tree.time_elapsed < max_time
-#   tree.iterate(map.total_lambdas * 5)
-# end
+while tree.time_elapsed < max_time
+  tree.iterate(map.total_lambdas * 5)
+end
