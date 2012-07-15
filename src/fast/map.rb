@@ -131,6 +131,10 @@ class FastMap
     @lift || @dead || @aborted
   end
 
+  def lift?
+    @lift
+  end
+
   def score
     return @score if @score
 

@@ -39,7 +39,7 @@ class MonteCarloTree
 
     if best.abort_score >= @best.score
       if best.done?
-        @best = best
+        @best = compact(best)
       else
         @best = best.move("A")
       end
@@ -60,10 +60,32 @@ class MonteCarloTree
     end
   end
 
+  def compact(map)
+    return map unless map.lift?
+    best = map
+    (0...map.moves.size).each do |i|
+      step = @root
+      (0...map.moves.size).each do |j|
+        if i != j
+          m = map.moves[j..j]
+          step = step.move(m)
+        end
+      end
+      if step.score >= best.score
+        best = step
+      end
+    end
+    if best != map
+      compact(best)
+    else
+      map
+    end
+  end
+
   def move(map)
     @moves += 1
     map.create_heatmap!
-    best_moves = map.best_moves | MOVES
+    best_moves = map.best_moves | ["A"]
     n = best_moves.size
     mv = best_moves[n - 1 - Math.log(rand(Math::E ** n) + 1).to_i]
     m = map.move(mv)
@@ -102,7 +124,7 @@ class MonteCarloTree
             (C * Math.sqrt(2.0 * Math.log(m) / n)) 
             + (Math.sqrt(
               (@squared_scores[moves].to_f - (n*x*x) + D) / n))
-      [s, moves, q, n, m]
+      [s, moves]
     end
     scores.sort!{|a,b| a[0] <=> b[0]}
     best_moves = scores[-1][1]
@@ -126,10 +148,6 @@ class MonteCarloTree
     puts "Time elapsed: #{time_elapsed}"
     puts "Iterations: #{@iterations}"
     puts "Moves/sec: #{(@moves.to_f / time_elapsed).to_i}"
-  end
-
-  def best
-    @best
   end
 
   def weighted_rand(map)
