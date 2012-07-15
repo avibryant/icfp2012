@@ -9,9 +9,9 @@ class MonteCarloTree
     @scores = Hash.new(0)
     @squared_scores = Hash.new(0)
     @counts = Hash.new(0)
-    @recent_counts = Hash.new(0)
     @last_dump = @start_time = Time.new.to_f
     @best = root
+    @moves = 0
   end
 
   def time_elapsed
@@ -24,12 +24,13 @@ class MonteCarloTree
 
   def iterate(max_depth)
     map = pick_map(@root)
+#    puts map.moves
     best = map
 
     depth = 0
     until map.done? || depth > max_depth
       map = move(map)
-      if map.adjusted_win_rate > best.adjusted_win_rate
+      if map.score_ratio > best.score_ratio
         best = map
       end
       depth += 1
@@ -48,13 +49,12 @@ class MonteCarloTree
     (0...moves.size).to_a.reverse.each do |i|
       parent_moves = moves[0..i]
       @counts[parent_moves] += 1
-      @scores[parent_moves] += best.adjusted_win_rate
-      @squared_scores[parent_moves] += (best.adjusted_win_rate * best.adjusted_win_rate)
-      @recent_counts[parent_moves] += 1
+      @scores[parent_moves] += best.score_ratio
+      @squared_scores[parent_moves] += (best.score_ratio * best.score_ratio)
     end
     @counts[""] += 1
-    @scores[""] += best.adjusted_win_rate
-    @squared_scores[""] += (best.adjusted_win_rate * best.adjusted_win_rate)
+    @scores[""] += best.score_ratio
+    @squared_scores[""] += (best.score_ratio * best.score_ratio)
 
     if time_since_last_dump > 1
       dump
@@ -62,6 +62,7 @@ class MonteCarloTree
   end
 
   def move(map)
+    @moves += 1
     if rand < 0.1
       map.move("W")
     else
@@ -72,7 +73,7 @@ class MonteCarloTree
   def pick_map(map)
     until(map.done?)
       untried = untried_moves(map)
-      if(untried.empty?)
+      if(rand(MOVES.size) >= untried.size)
         map = best_child(map)
       else
         return expand(map, untried)
@@ -89,7 +90,7 @@ class MonteCarloTree
   end
 
   C = 1.0 / Math.sqrt(2.0)
-  D = 1000.0
+  D = 1
 
   def best_child(map)
     scores = children(map.moves).shuffle.map do |moves|
@@ -109,7 +110,7 @@ class MonteCarloTree
   end
 
   def children(moves)
-    MOVES.map{|m| moves + m}
+    MOVES.map{|m| moves + m}.select{|m| @maps.has_key?(m)}
   end
 
   def untried_moves(map)
@@ -123,6 +124,7 @@ class MonteCarloTree
     puts "Best moves: #{@best.moves}"
     puts "Tree size: #{@maps.size}"
     puts "Time elapsed: #{time_elapsed}"
+    puts "Moves/sec: #{(@moves.to_f / time_elapsed).to_i}"
   end
 
   def best
@@ -135,5 +137,5 @@ tree = MonteCarloTree.new(map)
 max_time = ARGV.shift.to_i
 
 while tree.time_elapsed < max_time
-  tree.iterate(map.total_lambdas * 10)
+  tree.iterate(map.total_lambdas * 5)
 end

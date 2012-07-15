@@ -120,21 +120,8 @@ class FastMap
     @abort_score
   end
 
-  def win_rate
-    if(@lift)
-      1
-    else
-      lambda_ratio = @lambdas.to_f / @total_lambdas
-      if(@dead)
-        lambda_ratio / 3
-      else
-        lambda_ratio / 2
-      end
-    end
-  end
-
-  def adjusted_win_rate
-    win_rate - (@moves.to_f / (@total_lambdas * 25))
+  def score_ratio
+   abort_score.to_f / (@total_lambdas * 75)
   end
 
   def moves
