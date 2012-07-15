@@ -89,7 +89,7 @@ object TileMap {
     // Look for the robot, rocks, lambdas and closed lift:
     val targetSet = Cell.targets.values.toSet
     val trampSet = Cell.trampolines.values.toSet
-    val pmap = ts.positionMap(Set(Robot, Rock, Lambda, CLift) ++ targetSet ++ trampSet)
+    val pmap = ts.positionMap(Set(Robot, Rock, Lambda, CLift, Beard, Razor) ++ targetSet ++ trampSet)
 
     val metadataTokens = linesSeq.drop(metadataIndex+1).map {line =>
       val parts = line.split(" ")
@@ -99,13 +99,15 @@ object TileMap {
     val untrackedKeys = Set(Robot)
     val cellPositions : Map[Cell, Set[Position]] = (pmap -- untrackedKeys).mapValues { _.toSet }
 
-    //extension-specific parsing of metadataTokens
+    //Todo: extension-specific parsing of metadataTokens goes here
     val water = WaterState.parse(metadataTokens)
     val tramps = TrampolineState.parse(metadataTokens)
+    val beardGrowth = TextHelper.parseInt(metadataTokens, "Growth", 0)
+    val razorCount = TextHelper.parseInt(metadataTokens, "Razors", 0)
 
     // We have enough to build the tileMap:
     new TileMap(ts, RobotState(Nil, List(pmap(Robot).head)),
-      cellPositions, Nil, false, false, water, tramps)
+      cellPositions, Nil, false, false, water, tramps, beardGrowth, razorCount)
   }
 
 }
@@ -122,7 +124,7 @@ case object Aborted extends GameState
 case class TileMap(state : TileState, robotState : RobotState,
   cellPositions: Map[Cell, Set[Position]], collectedLam : List[Position],
   completed : Boolean, botIsCrushed : Boolean, waterState : WaterState,
-  trampState : TrampolineState) {
+  trampState : TrampolineState, beardGrowthRate : Int, razorCount : Int) {
 
   override lazy val toString = {
     "map: \n" + state.toString + "\n" +
@@ -133,13 +135,34 @@ case class TileMap(state : TileState, robotState : RobotState,
     waterState.toString + "\n"
   }
 
+  lazy val numberOfMoves = robotState.moves.size
   lazy val heatmap = new HeatMap(this).populate
 
-  def move(mv : Move) : TileMap = moveRobot(mv).moveRocks
+  def move(mv : Move) : TileMap = moveRobot(mv).growBeards.moveRocks
 
   lazy val rocks : Set[Position] = cellPositions(Rock)
   lazy val remainingLam : Set[Position] = cellPositions(Lambda)
   lazy val liftPos : Position = cellPositions(CLift).head
+  lazy val beardPos : Set[Position] = cellPositions.getOrElse(Beard, Set[Position]())
+  lazy val razorPos : Set[Position] = cellPositions.getOrElse(Razor, Set[Position]())
+
+  protected def growBeards : TileMap = {
+    if (beardPos.isEmpty || numberOfMoves % beardGrowthRate != 0) {
+      return this
+    }
+
+    val (cols, rows) = state.colsRows
+
+    var newBeards = beardPos ++ beardPos.flatMap { pos =>
+      pos.neighbors8.filter { n =>
+        n.x >= 0 && n.x < cols && n.y >= 0 && n.y < rows && state(n) == Empty
+      }
+    }
+
+    var newState = newBeards.foldLeft(state) { (s, pos) => s.updated(pos, Beard) }
+    var newCellPositions = cellPositions + (Beard -> newBeards)
+    copy(state = newState, cellPositions = newCellPositions)
+  }
 
   protected def moveRocks : TileMap = {
     if (gameState != Playing) {
@@ -289,6 +312,12 @@ case class TileMap(state : TileState, robotState : RobotState,
           case _ => invalidNext
         }
       }
+      case Razor => {
+        val newRazors = razorPos - newPos
+        val newCellPositions = cellPositions + (Razor -> newRazors)
+        val newState = state.updated(newPos, Empty)
+        copy(state = newState, cellPositions = newCellPositions, razorCount = razorCount + 1)
+      }
       case Target(_) => invalidNext //Targets are walls until used
       case tramp@Trampoline(_) => {
         // Move immediately to the target of this trampoline:
@@ -338,8 +367,10 @@ case class TileMap(state : TileState, robotState : RobotState,
         score
       else
         //todo these may want different weights
-        abortScore + (heatmapScore * 0.8)
+        (abortScore.toDouble / 3) + (heatmapScore)
   }
+
+  def scoreRatio = score.toDouble / (totalLambdas * 75)
 
   lazy val totalLambdas = collectedLam.size + remainingLam.size
   lazy val progress = progressScore.toDouble / (totalLambdas * 75)

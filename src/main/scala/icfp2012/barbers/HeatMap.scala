@@ -24,7 +24,8 @@ class HeatMap(map: TileMap){
     row.zipWithIndex.map {
       cellx =>
       val (cell, x) = cellx
-      new HeatMapCell(cell, heatOf(cell), Position(x,y))
+      // TODO: the second position is unused now
+      new HeatMapCell(cell, heatOf(cell), Position(x,y), Position(x,y))
     }
   }
 
@@ -38,7 +39,9 @@ class HeatMap(map: TileMap){
       case Lambda => 25
       case OLift => (map.totalLambdas * 25)
       case Empty => NEG_INF
-      case Trampoline(c) => 0 //TODO probably should be smarter
+      case Beard => NEG_INF
+      case Razor => 0
+      case Trampoline(c) => NEG_INF //TODO probably should be smarter
       case Target(_) => NEG_INF //Same as a wall
     }
   }
@@ -88,7 +91,7 @@ class HeatMap(map: TileMap){
   }
 }
 
-class HeatMapCell(val cell : Cell, val value : Int, val pos : Position){
+class HeatMapCell(val cell : Cell, val value : Int, val pos : Position, val targetPos : Position){
   import HeatMap.NEG_INF
 
   override lazy val toString : String = {
@@ -102,11 +105,11 @@ class HeatMapCell(val cell : Cell, val value : Int, val pos : Position){
       }
       else {
         // Can't see how this would actually happen TODO: remove
-        new HeatMapCell(cell, NEG_INF, pos)
+        new HeatMapCell(cell, NEG_INF, pos, targetPos)
       }
     else if (cell == Rock)
-      new HeatMapCell(cell, (value :: neighbors.map{n => n.value - 5}).max, pos)
+      new HeatMapCell(cell, (value :: neighbors.map{n => n.value - 5}).max, pos, targetPos)
     else
-      new HeatMapCell(cell, (value :: neighbors.map{n => n.value - 1}).max, pos)
+      new HeatMapCell(cell, (value :: neighbors.map{n => n.value - 1}).max, pos, targetPos)
   }
 }
