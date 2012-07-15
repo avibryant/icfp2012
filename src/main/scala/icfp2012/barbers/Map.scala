@@ -29,27 +29,19 @@ class TileState(state : Vector[Vector[Cell]]) {
   }
 }
 
-case class RockList(rocks : List[Position]) {
-  def ::(pos : Position) = RockList(pos :: rocks)
-  def move(old : Position, newP : Position) : RockList = {
-    RockList(rocks.indexOf(old) match {
-      case -1 => error(old.toString + " not a rock")
-      case idx => rocks.updated(idx, newP)
-    })
-  }
-}
-
 /*
  * Immutable class representing the update/scoring rules of the 2012 contest
  */
-class TileMap(state : TileState, robotState : RobotState,
-  rocks : RockList, lambdas : List[Position], completed : Boolean) {
+case class TileMap(state : TileState, robotState : RobotState,
+  rocks : Set[Position], collectedLam : List[Position],
+  remainingLam : Set[Position], completed : Boolean) {
 
   override def toString = state.toString
 
   def move(mv : Move) : TileMap = moveRobot(mv).moveRocks
 
   protected def moveRocks : TileMap = {
+    if (completed) return this
     this
   }
 
@@ -66,18 +58,23 @@ class TileMap(state : TileState, robotState : RobotState,
 
     newCell match {
       case Empty => {
-        new TileMap(emptiedTileState, newRobotState, rocks, lambdas, false)
+        copy(state = emptiedTileState, robotState = newRobotState)
       }
       case Earth => {
-        new TileMap(emptiedTileState, newRobotState, rocks, lambdas, false)
+        copy(state = emptiedTileState, robotState = newRobotState)
       }
       case Lambda => {
         // Picked up a new Lambda:
-        new TileMap(emptiedTileState, newRobotState, rocks,
-          newPos :: lambdas, false)
+        copy(state = emptiedTileState,
+          robotState = newRobotState,
+          collectedLam = newPos :: collectedLam,
+          remainingLam = remainingLam - newPos
+          )
       }
       case OLift => {
-        new TileMap(emptiedTileState, newRobotState, rocks, lambdas, true)
+        copy(state = emptiedTileState,
+          robotState = newRobotState,
+          completed = true)
       }
       case Rock => {
         // We can push rocks left/right
@@ -88,19 +85,21 @@ class TileMap(state : TileState, robotState : RobotState,
               val newRockPos = newPos.move(Right)
               val movedTileState = emptiedTileState.updated(newRockPos, Rock)
               //Move the rocks
-              new TileMap(movedTileState, newRobotState,
-                rocks.move(newPos, newRockPos), lambdas, false)
+              copy(state = emptiedTileState,
+                robotState = newRobotState,
+                rocks = (rocks - newPos) + newRockPos)
             }
             case _ => this
           }
           case Left => state(newPos.move(Left)) match {
             case Empty => {
-              // Move the rock right:
+              // Move the rock to the left:
               val newRockPos = newPos.move(Left)
               val movedTileState = emptiedTileState.updated(newRockPos, Rock)
               //Move the rocks
-              new TileMap(movedTileState, newRobotState,
-                rocks.move(newPos, newRockPos), lambdas, false)
+              copy(state = emptiedTileState,
+                robotState = newRobotState,
+                rocks = (rocks - newPos) + newRockPos)
             }
             case _ => this
           }
