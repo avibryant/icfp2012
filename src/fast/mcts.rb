@@ -1,7 +1,7 @@
 require '../fast/map'
 
 class MonteCarloTree
-  MOVES = ["L", "R", "U", "D", "W"]
+  MOVES = ["L", "D", "R", "U", "W"]
 
   def initialize(root)
     @root = root
@@ -24,7 +24,7 @@ class MonteCarloTree
 
   def iterate(max_depth)
     map = pick_map(@root)
-#    puts map.moves
+ #   puts map.moves
     best = map
 
     depth = 0
@@ -46,16 +46,16 @@ class MonteCarloTree
     end
 
     moves = best.moves
-    (0...moves.size).to_a.reverse.each do |i|
-      parent_moves = moves[0..i]
-      @counts[parent_moves] += 1
-      @scores[parent_moves] += best.score_ratio
-      @squared_scores[parent_moves] += (best.score_ratio * best.score_ratio)
+    parents = [""] +
+              (0...moves.size).map{|i| moves[0..i]} +
+              (0...moves.size).map{|i| moves[0..i].delete("W")}
+ 
+    parents.uniq.each do |p|
+      @counts[p] += 1
+      @scores[p] += best.score_ratio
+      @squared_scores[p] += (best.score_ratio * best.score_ratio)
     end
-    @counts[""] += 1
-    @scores[""] += best.score_ratio
-    @squared_scores[""] += (best.score_ratio * best.score_ratio)
-
+ 
     if time_since_last_dump > 1
       dump
     end
@@ -73,17 +73,24 @@ class MonteCarloTree
   def pick_map(map)
     until(map.done?)
       untried = untried_moves(map)
-      if(rand(MOVES.size) >= untried.size)
+      if(untried.empty?)
         map = best_child(map)
       else
-        return expand(map, untried)
+        tried = MOVES - untried
+        if(tried != [] && tried != ["W"] && rand > 0.5)
+         # puts "r"
+          map = best_child(map)
+        else
+        #  puts "e"
+          return expand(map, untried)
+        end
       end
     end
     map
   end
 
   def expand(map, moves)
-    move = moves[rand(moves.size)]
+    move = moves[0]
     next_map = map.move(move)
     @maps[next_map.moves] = next_map
     next_map
