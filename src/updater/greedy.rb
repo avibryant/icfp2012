@@ -50,6 +50,7 @@ class BDR
     @commands = []
     @position = nil
     @recent_moves = RingBuffer.new(2)
+    @hit_counter = Hash.new(0)
   end
 
   def metadata
@@ -80,9 +81,12 @@ class BDR
       best_move, best_score = move_values[0]
     end
 
-    raise LoopDetected if @recent_moves.member?(move_trace)
+    if @recent_moves.member?(move_trace) && @hit_counter[move_trace] > 2
+      raise LoopDetected, best_move
+    end
 
     @recent_moves << move_trace
+    @hit_counter[move_trace] += 1
 
     command = DIRECTION_COMMANDS[best_move]
     new_map = map.command_robot(command).move_rocks
@@ -114,7 +118,7 @@ class BDR
   def available_moves_from(cell)
     avail_moves = DIRECTIONS.dup
     avail_moves.delete(Down) if Rock === cell.above
-    avail_moves.reject! {|dir| ca = cell.cell_at(dir); Wall === ca || Rock === ca }
+    avail_moves.reject! {|dir| [Wall, Rock].any? {|ct| ct === cell.cell_at(dir) } }
     move_values = avail_moves.zip(avail_moves.map {|d| cell.cell_at(d).value })
     move_values.sort_by {|p| -p[1] } #.reject {|p| p[1] < 0 }
   end

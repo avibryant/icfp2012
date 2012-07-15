@@ -84,18 +84,6 @@ class Wall < Cell
 end
 
 class Lift < Cell
-  def move_robot(direction)
-    if !@map.lambdas_gone
-      Lift
-    elsif cell_at(direction.opposite) == nil
-      Lift
-    elsif Robot === cell_at(direction.opposite)
-      Robot
-    else
-      Lift
-    end
-  end
-
   def update_metadata(direction, metadata)
     if @map.lambdas_gone
       metadata["Replacements"] << [[x, y], [nil, OpenLift]]
@@ -111,12 +99,20 @@ class Lift < Cell
   end
 
   def get_heatmap_value(current, distance)
-    -1
+    # this shouldn't be necessary, but sometimes scoring is redone before the
+    # map gets updated
+    if @map.lambdas_gone then OpenLift::VALUE else -1 end
   end
 end
 
 class OpenLift < Lift
   VALUE = 99
+
+  def move_robot(direction)
+    if Robot === cell_at(direction.opposite)
+      Robot
+    end
+  end
 
   def get_heatmap_value(current, distance)
     if underwater? then -1 else VALUE end
@@ -136,7 +132,7 @@ class Earth < Cell
 end
 
 class Lambda < Cell
-  VALUE = 2500
+  VALUE = 25
 
   def move_robot(direction)
     if cell_at(direction.opposite) == nil
@@ -460,8 +456,8 @@ class Parser
     end
   end
 
-  def self.render(map)
-    cell_str = map.cells.reverse.map {|r| r.map{|c| render_cell(c)}.join}.join("\n")
+  def self.render(map, with_scores=false)
+    cell_str = map.cells.reverse.map {|r| r.map{|c| render_cell(c, with_scores)}.join}.join("\n")
     metadata = map.metadata.keys.select {|k| !Map::HIDDEN_METADATA.member?(k) }.map do |k|
       v = map.metadata[k]
       "#{k} #{v.inspect}"
@@ -472,10 +468,13 @@ class Parser
     cell_str + "\n\n" + metadata_str + "\nScore #{map.score}"
   end
 
-  def self.render_cell(cell)
-    cell.char
-#        s = "%02i" % cell.value
-#        return "#{k}:#{s} "
+  def self.render_cell(cell, with_score=false)
+    if with_score
+      s = "%02i" % (cell.value || 0)
+      "#{cell.char}:#{s}"
+    else
+      cell.char
+    end
   end
 end
 
@@ -590,7 +589,7 @@ class Map
       metadata["HeatMap"] = {}
     end
 
-    Map.new(cells, metadata, moves + direction)
+    map = Map.new(cells, metadata, moves + direction)
   end
 
   # This is a simple heatmap scoring algorithm; it initializes each cell to either
