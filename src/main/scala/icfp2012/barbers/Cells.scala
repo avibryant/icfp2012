@@ -21,6 +21,8 @@ object Cell {
       case Lambda => '\\'
       case OLift => 'O'
       case Empty => ' '
+      case Beard => 'W'
+      case Razor => '!'
     }
   }
 }
@@ -34,4 +36,6 @@ case object Wall extends Cell
 case object Lambda extends Cell
 case object OLift extends Cell
 case object Empty extends Cell
+case object Beard extends Cell
+case object Razor extends Cell
 
