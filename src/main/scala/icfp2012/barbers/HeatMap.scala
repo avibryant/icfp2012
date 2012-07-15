@@ -25,6 +25,7 @@ class HeatMap(map: TileMap){
 
   def populate = {
     furtherPopulate(state.flatten.toSet, 0)
+    this
   }
 
   def furtherPopulate(requiresUpdate : Set[HeatMapCell], iterations : Int) : Boolean = {
