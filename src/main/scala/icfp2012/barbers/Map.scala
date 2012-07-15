@@ -83,13 +83,18 @@ object TileMap {
       (parts.head, parts.tail.toList)
     }
 
+    val cellPositions : Map[Cell, Set[Position]] = Map(
+      Rock -> pmap(Rock).toSet,
+      Lambda -> pmap(Lambda).toSet,
+      CLift -> pmap(CLift).toSet
+    )
+
     //Todo: extension-specific parsing of metadataTokens goes here
     val water = WaterState.parse(metadataTokens)
 
     // We have enough to build the tileMap:
     new TileMap(ts, RobotState(Nil, List(pmap(Robot).head)),
-      pmap(Rock).toSet, Nil, pmap(Lambda).toSet, pmap(CLift)(0), false, false,
-      water)
+      cellPositions, Nil, false, false, water)
   }
 
 }
@@ -103,10 +108,8 @@ case object Aborted extends GameState
 /*
  * Immutable class representing the update/scoring rules of the 2012 contest
  */
-case class TileMap(state : TileState, robotState : RobotState,
-  rocks : Set[Position], collectedLam : List[Position],
-  remainingLam : Set[Position], liftPos : Position, completed : Boolean, botIsCrushed : Boolean,
-  waterState : WaterState) {
+case class TileMap(state : TileState, robotState : RobotState, cellPositions: Map[Cell, Set[Position]],
+  collectedLam : List[Position], completed : Boolean, botIsCrushed : Boolean, waterState : WaterState) {
 
   override lazy val toString = {
     heatmap.populate
@@ -121,6 +124,10 @@ case class TileMap(state : TileState, robotState : RobotState,
   val heatmap = new HeatMap(this)
 
   def move(mv : Move) : TileMap = moveRobot(mv).moveRocks
+
+  lazy val rocks : Set[Position] = cellPositions(Rock)
+  lazy val remainingLam : Set[Position] = cellPositions(Lambda)
+  lazy val liftPos : Position = cellPositions(CLift).head
 
   protected def moveRocks : TileMap = {
     if (gameState != Playing) {
@@ -170,10 +177,11 @@ case class TileMap(state : TileState, robotState : RobotState,
     val dangerZone = robotState.pos.move(Up)
     // Make sure none of the new positions are in the dangerZone
     val newBotIsCrushed = writes.forall { _._2 != dangerZone } == false
-
+    val newCellPositions = cellPositions + (Rock -> newRocks)
     val newWaterState = waterState.update(robotState)
 
-    copy(state = newState, rocks = newRocks, botIsCrushed = newBotIsCrushed, waterState = newWaterState)
+    copy(state = newState, cellPositions = newCellPositions, 
+      botIsCrushed = newBotIsCrushed, waterState = newWaterState)
   }
 
   lazy val gameState : GameState = {
@@ -223,10 +231,12 @@ case class TileMap(state : TileState, robotState : RobotState,
         else {
           emptiedTileState
         }
+        val newCellPositions = cellPositions + (Lambda -> newRLam)
+
         copy(state = newState,
           robotState = newRobotState,
           collectedLam = newPos :: collectedLam,
-          remainingLam = newRLam)
+          cellPositions = newCellPositions)
       }
       case OLift => {
         copy(state = emptiedTileState,
@@ -241,10 +251,12 @@ case class TileMap(state : TileState, robotState : RobotState,
               // Move the rock right:
               val newRockPos = newPos.move(Right)
               val movedTileState = emptiedTileState.updated(newRockPos, Rock)
+              val newRocks = (rocks - newPos) + newRockPos
+              val newCellPositions = cellPositions + (Rock -> newRocks)
               //Move the rocks
               copy(state = movedTileState,
                 robotState = newRobotState,
-                rocks = (rocks - newPos) + newRockPos)
+                cellPositions = newCellPositions)
             }
             case _ => invalidNext
           }
@@ -253,10 +265,12 @@ case class TileMap(state : TileState, robotState : RobotState,
               // Move the rock to the left:
               val newRockPos = newPos.move(Left)
               val movedTileState = emptiedTileState.updated(newRockPos, Rock)
+              val newRocks = (rocks - newPos) + newRockPos
+              val newCellPositions = cellPositions + (Rock -> newRocks)
               //Move the rocks
               copy(state = movedTileState,
                 robotState = newRobotState,
-                rocks = (rocks - newPos) + newRockPos)
+                cellPositions = newCellPositions)
             }
             case _ => invalidNext
           }

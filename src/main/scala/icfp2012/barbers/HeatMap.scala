@@ -24,35 +24,11 @@ class HeatMap(map: TileMap){
   }
 
   def populate = {
-    var changed : Set[(HeatMapCell, (Int,Int), Set[HeatMapCell])] = Set.empty
-    state.foreach {
-      row => 
-      row.foreach {
-        cell =>
-        val x = cell.x
-        val y = cell.y
-        val neighborPositions : Set[(Int,Int)] = Set((x, y - 1), (x - 1, y), (x, y + 1), (x + 1, y))
-        val validNeighbors = neighborPositions
-          .filter{position : (Int, Int) => 
-            position._2 >= 0 && position._2 < state.size && position._1 >= 0 && position._1 < state(position._2).size
-          }
-          .map{ position => state(position._2)(position._1)}
-        val newCell = cell.update(validNeighbors)
-        if (cell.value != newCell.value) changed = changed ++ Set((newCell, (x,y), validNeighbors))
-      }
-    }
-    changed.foreach {
-      change => 
-      val newRow = state(change._2._2).updated(change._2._1, change._1)
-      state = state.updated(change._2._2, newRow)
-    }
-    val changedNeighbors = changed.map{change => change._3}.flatten.toSet
-
-    furtherPopulate(changedNeighbors, 0)
+    furtherPopulate(state.flatten.toSet, 0)
   }
 
   def furtherPopulate(requiresUpdate : Set[HeatMapCell], iterations : Int) : Boolean = {
-    if ((iterations > 10) || (requiresUpdate.size == 0)) 
+    if ((iterations > 20) || (requiresUpdate.size == 0)) 
       return requiresUpdate.size == 0
 
     var changed : Set[(HeatMapCell, (Int,Int), Set[HeatMapCell])] = Set.empty
@@ -83,7 +59,7 @@ class HeatMap(map: TileMap){
 class HeatMapCell(cell : Cell, initialValue : Int, position : (Int, Int)){
   val value : Int = {initialValue}
   override lazy val toString : String = {
-    if(value == -10000) " . " else "%3d".format(value)
+    if(value <= -10000) " . " else "%3d".format(value)
   }
   val x = {position._1}
   val y = {position._2}
