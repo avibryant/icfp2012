@@ -3,13 +3,17 @@ package icfp2012.barbers
 import scala.collection.mutable._
 import scala.annotation.tailrec
 
+/*
+Args: max number of seconds to run, max depth to simulate
+Example:
+java -jar target/barbers-assembly-0.0.1.jar icfp2012.barbers.MCTS 5 30 < maps/contest1/base
+*/
 class MCTS(args : Array[String]) extends Algorithm(args) {
-  val maxIterations = args(0).toInt
+  val maxTime = args(0).toInt
   val maxDepth = args(1).toInt
   val rand = new java.util.Random
 
-  //todo: can we get the move list from the TileMap?
-  class Node(val tm : TileMap, val moves : List[Move], parent : Node) {
+  class Node(val tm : TileMap, parent : Node) {
     var count = 0.0d
     var totalScore = 0.0d
     var totalScore2 = 0.0d
@@ -46,7 +50,7 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
 
     //todo: this might want to use heatmap
     def expand(moves : List[Move]) = createChild(moves.head)
-    def createChild(mv : Move) = new Node(tm.move(mv), mv :: moves, this)
+    def createChild(mv : Move) = new Node(tm.move(mv), this)
 
     //todo: this should definitely use heatmap
     def move = createChild(validMoves(rand.nextInt(5)))
@@ -75,20 +79,21 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
       totalScore2 += (score*score)
       count += 1
       if(parent != null) {
-        if(!parent.children.contains(moves.head))
-          parent.children(moves.head) = this
+        val lastMove = tm.robotState.moves.head
+        if(!parent.children.contains(lastMove))
+          parent.children(lastMove) = this
         parent.update(score)
       }
     }
   }
 
-  var iterations = 0
-
   override def apply(tm : TileMap) = {
-    val root = new Node(tm, Nil, null)
+    val startTime = System.currentTimeMillis
+    val endTime = startTime + (1000 * maxTime)
+
+    val root = new Node(tm, null)
     var solution = tm
-    while(iterations < maxIterations) {
-      iterations += 1
+    while(System.currentTimeMillis < endTime) {
       val result = root.select.simulate
       //todo - try updating just the select vs. the simulate result
       result.update(result.score)
@@ -102,6 +107,7 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
 
         println("New solution:")
         println(solution)
+        println("Elapsed time: " + (System.currentTimeMillis - startTime))
       }
     }
     solution
