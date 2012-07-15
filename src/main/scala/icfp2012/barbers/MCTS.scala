@@ -21,7 +21,7 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
   //magic, and can be tweaked
   val C = 1.0 / math.sqrt(2.0)
   val D = 1
-  def c = (1.0 / (1 + math.exp(solution.scoreRatio)))
+  def c = 1.0 - (math.exp(2 * solution.scoreRatio) / 5.0)
 
   class Node(val tm : TileMap, parent : Node) {
     var count = 0.0d
@@ -73,7 +73,11 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
     //exponentially prefer earlier items in list
     def pickMove(moves : List[Move]) = {
       val n = moves.size
-      moves(n - 1 - math.log(rand.nextInt(math.pow(math.E, n).toInt) + 1).toInt)
+      if(math.random < c)
+        moves(rand.nextInt(moves.size))
+      else
+        moves(0)
+//      moves(n - 1 - math.log(rand.nextInt(math.pow(math.E, n).toInt) + 1).toInt)
     }
 
     def score = tm.progress
