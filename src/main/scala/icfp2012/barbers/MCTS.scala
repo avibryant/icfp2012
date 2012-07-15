@@ -124,7 +124,8 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
 
         println("New solution:")
         println(solution)
-        println("Progress score: " + solution.progress)
+        println("Progress score: " + candidate.progressScore)
+        println("Move scores: " + candidate.moveScores)
         println("Elapsed time: " + (System.currentTimeMillis - startTime))
         println("Tree size: " + nodeCount)
         println("Moves/sec: " + (moveCount * 1000 / (System.currentTimeMillis - startTime)))
