@@ -7,8 +7,18 @@ class AStar(tm : TileMap, start : Position, targets : Set[Position]) {
   val goals =
     if(targets.size < 100)
       targets
-    else
-      tm.nearbyLambdas(20).toSet
+    else {
+      val local = tm.nearbyLambdas(10).toSet
+      if (local.isEmpty) {
+        targets.toList
+          .sortBy(estimate(start, _))
+          .take(10)
+          .toSet
+      }
+      else {
+        local
+      }
+    }
 
   var closedSet = Set[Position]()
   var openSet = Set(start)
