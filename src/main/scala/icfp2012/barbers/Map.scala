@@ -144,7 +144,10 @@ case class TileMap(state : TileState, robotState : RobotState,
 
   lazy val numberOfMoves = robotState.moves.size
   // TODO: we can possibly do better if we use the previous heatmap
-  lazy val heatmap = {val init = cachedHeatMap.getOrElse { HeatMap.init(this) }; HeatMap.populate(init)}
+  lazy val heatmap = {
+    val init = cachedHeatMap.getOrElse { HeatMap.init(this) };
+    HeatMap.populate(init)
+  }
 
   def move(mv : Move) : TileMap = moveRobot(mv).growBeards.moveRocks
 
@@ -429,7 +432,7 @@ case class TileMap(state : TileState, robotState : RobotState,
 
   def bestMove = validMoves(0)
 
-  def moveScores = {
+  lazy val moveScores = {
     List(Left, Down, Right, Up).map{dir => (dir, move(dir).heatmapScore, move(dir).progressScore)}
   }
 }
