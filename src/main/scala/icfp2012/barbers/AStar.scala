@@ -42,14 +42,24 @@ class AStar(tm : TileMap, start : Position, targets : Set[Position]) {
     }
   }
 
+  def randomMinimumFromOpenSet = {
+    val min = openSet.minBy(fScore)
+    val minScore = fScore(min)
+    val allMin = openSet
+      .filter { fScore(_) == minScore }
+      .toIndexedSeq
+    val idx = (allMin.size * scala.math.random).toInt
+    allMin(idx)
+  }
+
   def iterate : Option[Position] = {
-    val current = openSet.minBy(fScore)
+    val current = randomMinimumFromOpenSet
     if(goals.contains(current))
       return Some(current);
 
     openSet -= current
     closedSet += current
-    neighbors(current).foreach {neighbor => 
+    neighbors(current).foreach {neighbor =>
       if(!closedSet.contains(neighbor)) {
 
         val tentativeGScore = gScore(current) + distanceBetween(current, neighbor)
