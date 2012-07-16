@@ -145,7 +145,7 @@ case class TileMap(state : TileState, robotState : RobotState,
   lazy val numberOfMoves = robotState.moves.size
   // TODO: we can possibly do better if we use the previous heatmap
   lazy val heatmap = {
-    val init = cachedHeatMap.getOrElse { HeatMap.init(this) };
+    val init = cachedHeatMap.getOrElse { HeatMap.init(this, Position(List(robotState.pos.x - 25, 0).max,List(robotState.pos.y - 25, 0).max), Position(50,50)) };
     HeatMap.populate(init)
   }
 

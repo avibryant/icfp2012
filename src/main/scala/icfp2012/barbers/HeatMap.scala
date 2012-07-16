@@ -5,17 +5,17 @@ import scala.annotation.tailrec
 object HeatMap {
   val NEG_INF = -10000
 
-  def init(map : TileMap) : HeatMap = {
-    val state : IndexedSeq[IndexedSeq[HeatMapCell]] = map.state.cells.zipWithIndex.map {
+  def init(map : TileMap, corner : Position, size : Position) : HeatMap = {
+    val state : IndexedSeq[IndexedSeq[HeatMapCell]] = map.state.cells.slice(corner.y, corner.y + size.y).zipWithIndex.map {
       rowy =>
       val (row, y) = rowy
-      row.zipWithIndex.map {
+      row.slice(corner.x, corner.x + size.x).zipWithIndex.map {
         cellx =>
         val (cell, x) = cellx
         new HeatMapCell(cell, initHeatOf(map, cell), Position(x,y))
       }
     }
-    new HeatMap(map, state)
+    new HeatMap(map, state, corner)
   }
 
   def initHeatOf(tm : TileMap, c : Cell) : Int = {
@@ -66,16 +66,23 @@ object HeatMap {
   }
 }
 
-class HeatMap(val tileMap: TileMap, val heatState : IndexedSeq[IndexedSeq[HeatMapCell]]) {
+class HeatMap(val tileMap: TileMap, val heatState : IndexedSeq[IndexedSeq[HeatMapCell]], val corner : Position) {
   import HeatMap.NEG_INF
 
-  def apply(pos : Position) = heatCellAt(pos).value
+  def apply(pos : Position) = {
+    val x = pos.x - corner.x
+    val y = pos.y - corner.y
+    if ((x < 0) || (y < 0) || (y >= heatState.size) || (x >= heatState(y).size))
+      NEG_INF
+    else
+      heatCellAt(Position(x, y)).value
+  }
 
   def heatCellAt(pos : Position) = heatState(pos.y)(pos.x)
   def setCell(hmc : HeatMapCell) : HeatMap = {
     val newRow = heatState(hmc.pos.y).updated(hmc.pos.x, hmc)
     val newState = heatState.updated(hmc.pos.y, newRow)
-    new HeatMap(tileMap, newState)
+    new HeatMap(tileMap, newState, corner)
   }
 
   def robotHasScore = {apply(tileMap.robotState.pos) > NEG_INF}
