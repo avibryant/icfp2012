@@ -11,14 +11,11 @@ class AStar(ts : TileState, start : Position, targets : Set[Position]) {
   var gScore = HashMap(start -> 0)
   var fScore = HashMap(start -> estimate(start))
 
-  def shortestDistance(maxIterations : Int) : Int = {
+  def shortestDistance : Int = {
     var iterations = 0
-    while(iterations < maxIterations) {
-    //  println(fScore)
+    while(iterations < 500) {
       if(openSet.size == 0)
         return 10000;
-//      println("Open set size: " + openSet.size)
-//      println("Closed set size: " + closedSet.size)
 
       iterate match {
         case Some(pos) => return fScore(pos)
@@ -26,37 +23,24 @@ class AStar(ts : TileState, start : Position, targets : Set[Position]) {
       }
       iterations += 1
     }
-    println("max iterations reached")
-    return fScore(openSet.minBy(fScore))
+    fScore(openSet.minBy(fScore))
   }
 
   def iterate : Option[Position] = {
     val current = openSet.minBy(fScore)
-//    println(current)
-//    println(goal)
- //   println(estimate(current))
- //   println(gScore(current))
-
     if(targets.contains(current))
       return Some(current);
 
     openSet -= current
     closedSet += current
-//    println(current.neighbors4)
-    current.neighbors4.filter(p => ts(p) != Wall && p.x > 0 && p.y > 0).foreach {neighbor => 
-   //   println("n")
+    current.neighbors4.filter(p => ts(p) != Wall && p.x >= 0 && p.y >= 0).foreach {neighbor => 
       if(!closedSet.contains(neighbor)) {
-//        println(neighbor)
 
         val tentativeGScore = gScore(current) + distanceBetween(current, neighbor)
-   //     println("g")
-  //      println(tentativeGScore)
         if(!openSet.contains(neighbor) || tentativeGScore < gScore(neighbor)) {
           openSet += neighbor
           gScore(neighbor) = tentativeGScore
           fScore(neighbor) = tentativeGScore + estimate(neighbor)
-     //     println("f")
-     //     println(fScore(neighbor))
         }
       }
     }
