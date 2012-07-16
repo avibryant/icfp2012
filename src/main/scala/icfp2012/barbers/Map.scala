@@ -56,6 +56,12 @@ class TileState(state : IndexedSeq[IndexedSeq[Cell]]) {
     new TileState(state.updated(p.y, newRow))
   }
 
+  def updateAll(ps : Seq[Position], c : Cell) = {
+    ps.foldLeft(this) { (ts : TileState, p : Position) =>
+      ts.updated(p, c)
+    }
+  }
+
   override lazy val toString : String = {
     //Reverse the rows, so they start at the largest number:
     state.reverse
@@ -102,7 +108,7 @@ object TileMap {
     //Todo: extension-specific parsing of metadataTokens goes here
     val water = WaterState.parse(metadataTokens)
     val tramps = TrampolineState.parse(metadataTokens)
-    val beardGrowth = TextHelper.parseInt(metadataTokens, "Growth", 0)
+    val beardGrowth = TextHelper.parseInt(metadataTokens, "Growth", 25)
     val razorCount = TextHelper.parseInt(metadataTokens, "Razors", 0)
 
     // We have enough to build the tileMap:
@@ -131,6 +137,7 @@ case class TileMap(state : TileState, robotState : RobotState,
     "score: " + score.toString + "\n" +
     "move count: " + robotState.moves.size + "\n" +
     "moves: " + robotState.moves.reverse.map { Move.charOf(_) }.mkString("") + "\n" +
+    "razors: " + razorCount + "\n" +
     "heatmap: \n" + heatmap + "\n" +
     waterState.toString + "\n"
   }
@@ -338,6 +345,23 @@ case class TileMap(state : TileState, robotState : RobotState,
         copy(state = newState, robotState = newRobotState,
           trampState = newTrampState, cellPositions = newCellPositions)
       }
+      case Robot => {
+        mv match {
+          case Shave => {
+            if(razorCount > 0) {
+              val shavedBeards = robotState.beardNeighbors(beardPos)
+              val newBeards = beardPos -- shavedBeards
+              val newCellPositions = cellPositions + (Beard -> newBeards)
+              val newState = state.updateAll(shavedBeards.toSeq, Empty)
+              copy(state = newState, robotState = newRobotState,
+                cellPositions = newCellPositions, razorCount = razorCount - 1)
+            } else {
+              invalidNext
+            }
+          }
+          case _ => invalidNext
+        }
+      }
       case _ => invalidNext
     }
   }
@@ -381,12 +405,18 @@ case class TileMap(state : TileState, robotState : RobotState,
     if(completed)
       List(Wait)
     else {
-      List(Left, Down, Right, Up).map{dir => (dir, heatmap(robotState.pos.move(dir)))}
+      val out = List(Left, Down, Right, Up).map{dir => (dir, heatmap(robotState.pos.move(dir)))}
         .filter(_._2 > -100)
         .sortBy(_._2)
         .map(_._1)
         .reverse ++
       List(Wait)
+
+      if(razorCount > 0 && beardPos.contains(robotState.pos.move(out.head))) {
+        List(Shave) ++ out
+      } else {
+        out
+      }
     }
   }
 

@@ -30,7 +30,7 @@ object HeatMap {
       case OLift => (tm.totalLambdas * 25)
       case Empty => NEG_INF
       case Beard => NEG_INF
-      case Razor => 0
+      case Razor => 10
       case Trampoline(c) => NEG_INF //TODO probably should be smarter
       case Target(_) => NEG_INF //Same as a wall
     }
