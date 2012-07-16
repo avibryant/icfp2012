@@ -420,8 +420,14 @@ case class TileMap(state : TileState, robotState : RobotState,
     if(completed)
       List(Wait)
     else {
-      val out = List(Left, Down, Right, Up).map{dir => (dir, heatScore(robotState.pos.move(dir)))}
+      val r = new java.util.Random
+      val out = List(Left, Down, Right, Up)
+        .map {dir => (dir, heatScore(robotState.pos.move(dir)))}
         .filter(_._2 > -100)
+        // To break a tie, we shuffle the list before sorting
+        .map { x => (x,r.nextDouble) }
+        .sortBy { _._2 } // Random shuffle
+        .map { _._1 } // Keep the original item, discard shuffle value
         .sortBy(_._2)
         .map(_._1)
         .reverse ++
