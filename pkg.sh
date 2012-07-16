@@ -10,4 +10,4 @@ cp README pkg/
 cd pkg
 tar -cvzf barbers.tgz *
 cd ..
-mv pkg/barbers.tgz ./
+mv pkg/icfp-96223304.tgz ./
