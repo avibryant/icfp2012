@@ -50,7 +50,7 @@ object HeatMap {
         .foldLeft(Set[(HeatMapCell, Set[HeatMapCell])]()) { (changed, cell) =>
           val newCell = hm.update(cell, hm.heatFlowIn(cell))
           if (cell.value != newCell.value) {
-            changed + ((newCell, hm.heatFlowOut(cell).toSet))
+            changed + ((newCell, hm.heatFlowOut(cell).filter {nCell => nCell.value < newCell.value -1}.toSet))
           }
           else {
             changed
