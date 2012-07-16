@@ -224,7 +224,7 @@ case class TileMap(state : TileState, robotState : RobotState,
     val newWaterState = waterState.update(robotState)
 
     copy(state = newState, cellPositions = newCellPositions,
-      botIsCrushed = newBotIsCrushed, waterState = newWaterState)
+      botIsCrushed = newBotIsCrushed, waterState = newWaterState, cachedHeatMap = Option(heatmap))
   }
 
   lazy val gameState : GameState = {
