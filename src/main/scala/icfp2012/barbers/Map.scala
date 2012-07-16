@@ -432,7 +432,8 @@ case class TileMap(state : TileState, robotState : RobotState,
     if(completed)
       List(Wait)
     else {
-      val out = List(Left, Down, Right, Up, Wait)
+      val out = List(bestMove) ++ 
+                  List(Left, Down, Right, Up, Wait).filter(_ != bestMove)
 
       if(razorCount > 0 && beardPos.contains(robotState.pos.move(out.head))) {
         List(Shave) ++ out
