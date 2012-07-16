@@ -59,8 +59,10 @@ class AStar(ts : TileState, start : Position, targets : Set[Position]) {
   def distanceBetween(cell : Position, neighbor : Position) = {
     (ts(cell), ts(neighbor)) match {
       case (_, Wall) => 10000
+      case (Wall, _) => 10000
       case (Rock, Rock) => 100
       case (_, Rock) => 10
+      case (Rock, _) => 5
       case (_, _) => 1
     }
   }
