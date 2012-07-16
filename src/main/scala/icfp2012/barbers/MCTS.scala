@@ -17,11 +17,13 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
   var nodeCount = 0
 
   var solution : TileMap = null
+  var solutionTime = 0L
 
   //magic, and can be tweaked
   val C = 1.0 / math.sqrt(2.0)
   val D = 1
-  def c = 1.0 - (math.exp(2 * solution.scoreRatio) / 5.0)
+  def c = (1.0 / (1.0 + math.exp((solutionTime - System.currentTimeMillis).toDouble / 10000))) -
+          (math.exp(2 * solution.scoreRatio) / 10.0)
 
   class Node(val tm : TileMap, parent : Node) {
     var count = 0.0d
@@ -113,6 +115,7 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
 
     val root = new Node(tm, null)
     solution = tm
+    solutionTime = System.currentTimeMillis
 
     while(System.currentTimeMillis < endTime) {
       val selection = root.select
@@ -135,8 +138,11 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
         println("Progress score: " + candidate.progressScore)
         println("Move scores: " + candidate.moveScores)
         println("Elapsed time: " + (System.currentTimeMillis - startTime))
+        println("Time since last improvement: " + (System.currentTimeMillis - solutionTime))
         println("Tree size: " + nodeCount)
         println("Moves/sec: " + (moveCount * 1000 / (System.currentTimeMillis - startTime)))
+
+        solutionTime = System.currentTimeMillis
       }
     }
     solution
