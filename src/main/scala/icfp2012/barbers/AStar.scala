@@ -3,6 +3,8 @@ package icfp2012.barbers
 import scala.collection.mutable.HashMap
 
 class AStar(ts : TileState, start : Position, targets : Set[Position]) {
+  val goal = targets.toList.head
+
   var closedSet = Set[Position]()
   var openSet = Set(start)
 
@@ -12,6 +14,7 @@ class AStar(ts : TileState, start : Position, targets : Set[Position]) {
   def shortestDistance(maxIterations : Int) : Int = {
     var iterations = 0
     while(iterations < maxIterations) {
+    //  println(fScore)
       if(openSet.size == 0)
         return 10000;
 //      println("Open set size: " + openSet.size)
@@ -29,19 +32,31 @@ class AStar(ts : TileState, start : Position, targets : Set[Position]) {
 
   def iterate : Option[Position] = {
     val current = openSet.minBy(fScore)
+//    println(current)
+//    println(goal)
+ //   println(estimate(current))
+ //   println(gScore(current))
+
     if(targets.contains(current))
       return Some(current);
 
     openSet -= current
     closedSet += current
-    current.neighbors4.filter(ts(_) != Wall).foreach {neighbor => 
+//    println(current.neighbors4)
+    current.neighbors4.filter(p => ts(p) != Wall && p.x > 0 && p.y > 0).foreach {neighbor => 
+   //   println("n")
       if(!closedSet.contains(neighbor)) {
-        val tentativeGScore = gScore(current) + distanceBetween(current, neighbor)
+//        println(neighbor)
 
+        val tentativeGScore = gScore(current) + distanceBetween(current, neighbor)
+   //     println("g")
+  //      println(tentativeGScore)
         if(!openSet.contains(neighbor) || tentativeGScore < gScore(neighbor)) {
           openSet += neighbor
           gScore(neighbor) = tentativeGScore
           fScore(neighbor) = tentativeGScore + estimate(neighbor)
+     //     println("f")
+     //     println(fScore(neighbor))
         }
       }
     }

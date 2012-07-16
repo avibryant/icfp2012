@@ -388,10 +388,17 @@ case class TileMap(state : TileState, robotState : RobotState,
       score
   }
 
-  def heatScore(pos : Position) = {
-//    val a = new AStar(state, pos, remainingLam)
-//    val sd = a.shortestDistance(10000)
-//    25 - sd
+  def heatScore(pos : Position) = {/*
+    if(remainingLam.size > 0) {
+      val a = new AStar(state, pos, remainingLam)
+      val sd = a.shortestDistance(10000)
+      25 - sd
+    } else {
+      val a = new AStar(state, pos, Set(liftPos))
+      val sd = a.shortestDistance(10000)
+      (collectedLam.size * 25) - sd
+    }
+    */
      heatmap(pos)
   }
 

@@ -12,7 +12,7 @@ case class Position(x : Int, y: Int) extends Ordered[Position] {
   }
 
   def neighbors4 : List[Position] = {
-    List(move(Up), move(Right), move(Up), move(Down))
+    List(move(Up), move(Right), move(Left), move(Down))
   }
 
   def neighbors8 : List[Position] = {
