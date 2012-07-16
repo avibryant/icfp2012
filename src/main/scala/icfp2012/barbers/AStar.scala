@@ -5,10 +5,10 @@ import scala.annotation.tailrec
 
 class AStar(tm : TileMap, start : Position, targets : Set[Position]) {
   val goals =
-    if(targets.size < 10)
+    if(targets.size < 100)
       targets
     else
-      targets.toList.sortBy(estimate(start, _)).take(10).toSet
+      Set(targets.toList.minBy(estimate(start, _)))
 
   var closedSet = Set[Position]()
   var openSet = Set(start)
