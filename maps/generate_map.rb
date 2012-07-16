@@ -86,7 +86,7 @@ map << ["#"] * width
 end
 map << ["#"] * width
 
-trampoline_count = rand(width / 5)
+trampoline_count = 0 #rand(width / 5)
 trampoline_count = 8 if trampoline_count > 8
 trampolines = make_trampolines(trampoline_count)
 
