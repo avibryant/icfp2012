@@ -389,9 +389,9 @@ case class TileMap(state : TileState, robotState : RobotState,
   }
 
   def heatScore(pos : Position) = {
-    val(prize, goals) = 
+    val (prize, goals) =
       if(remainingLam.size > 0)
-        (25, remainingLam)
+        (25, remainingLam ++ razorPos)
       else
         ((collectedLam.size * 25), Set(liftPos))
 
