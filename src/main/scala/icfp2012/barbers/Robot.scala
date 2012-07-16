@@ -18,7 +18,7 @@ case class Position(x : Int, y: Int) extends Ordered[Position] {
       Position(x+1, y+1),
       Position(x-1, y-1),
       Position(x+1, y-1),
-      Position(x-y, y+1)
+      Position(x-1, y+1)
     )
   }
 
@@ -39,6 +39,7 @@ case class RobotState(moves : List[Move], history : List[Position]) {
   // Record the move, but don't actually move the bot (jump in place)
   def invalidMove(mv : Move) = jump(mv, pos)
   def isAborted : Boolean = moves.headOption.map { _ == Abort }.getOrElse(false)
+  def beardNeighbors(beards : Set[Position]) = pos.neighbors8.filter{ n => beards.contains(n) }.toSet
 }
 
 object Move {
@@ -49,13 +50,15 @@ object Move {
     case Down => 'D'
     case Wait => 'W'
     case Abort => 'A'
+    case Shave => 'S'
   }
   val parser = Map('L' -> Left,
     'R' -> Right,
     'U' -> Up,
     'D' -> Down,
     'W' -> Wait,
-    'A' -> Abort)
+    'A' -> Abort,
+    'S' -> Shave)
 
   def parse(c : Char) : Move = parser(c)
 }
@@ -67,3 +70,4 @@ case object Up extends Move
 case object Down extends Move
 case object Wait extends Move
 case object Abort extends Move
+case object Shave extends Move
