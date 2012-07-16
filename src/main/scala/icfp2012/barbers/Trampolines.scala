@@ -16,14 +16,16 @@ object TrampolineState {
 }
 
 case class TrampolineState(targetMap : Map[Trampoline, Target]) {
+  lazy val trampMap = targetMap.toList
+      .groupBy { _._2 } // Key on target
+      .mapValues { _.map { _._1 } } //Only keep the trampolines
+
   def targetFor(tramp : Trampoline) : Target = targetMap(tramp)
+  def trampsFor(target : Target) : Seq[Trampoline] = trampMap(target)
   // Return the invalidated trampolines and the new state
   def jumpOn(tramp : Trampoline) : (Seq[Trampoline], TrampolineState) = {
     //Find all shared targets:
-    val toInvalidate = targetMap.toList
-      .groupBy { _._2 } // Key on target
-      .apply(targetFor(tramp)) // Get the Seq[(Trampoline, Target)] which match this target
-      .map { _._1 } // Get the other trampolines to remove
+    val toInvalidate = trampsFor(targetFor(tramp))
     (toInvalidate, new TrampolineState(targetMap -- toInvalidate))
   }
 }
