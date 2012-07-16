@@ -6,11 +6,11 @@ import scala.annotation.tailrec
 /*
 Args: max number of seconds to run, max depth to simulate
 Example:
-java -jar target/barbers-assembly-0.0.1.jar icfp2012.barbers.MCTS 5 30 < maps/contest1/base
+java -jar target/barbers-assembly-0.0.1.jar icfp2012.barbers.MCTS 5 < maps/contest1/base
 */
 class MCTS(args : Array[String]) extends Algorithm(args) {
   val maxTime = args(0).toInt
-  val maxDepth = args(1).toInt
+  val maxDepth = 200 //args(1).toInt
   val rand = new java.util.Random
 
   var moveCount = 0
