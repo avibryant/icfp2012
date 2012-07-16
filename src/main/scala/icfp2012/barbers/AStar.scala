@@ -33,7 +33,7 @@ class AStar(tm : TileMap, start : Position, targets : Set[Position]) {
     openSet.minBy(fScore)
   }
 
-  def shortestDistanceTo(pos : Position) = fScore(pos)
+  def shortestDistanceTo(pos : Position) = fScore.getOrElse(pos, 10000)
 
   final def pathTo(pos: Position) : List[Position] = {
     cameFrom.get(pos) match {
