@@ -48,12 +48,8 @@ object HeatMap {
     else {
       val changed = requiresUpdate
         .foldLeft(Set[(HeatMapCell, Set[HeatMapCell])]()) { (changed, cell) =>
-          val validNeighbors = List(Down,Left,Up,Right)
-            .map { cell.pos.move(_) }
-            .filter{ hm.consider(_) }
-            .map{ hm.heatCellAt(_) }
-
-          val newCell = cell.update(validNeighbors)
+          val validNeighbors = hm.heatFlow(cell)
+          val newCell = hm.update(cell, validNeighbors)
           if (cell.value != newCell.value) {
             changed + ((newCell, validNeighbors.toSet))
           }
@@ -93,27 +89,37 @@ class HeatMap(val tileMap: TileMap, val heatState : IndexedSeq[IndexedSeq[HeatMa
     position.y < heatState.size &&
     position.x < heatState(position.y).size
 
+  def update(hmc : HeatMapCell, neighbors : List[HeatMapCell]) : HeatMapCell = {
+    if (hmc.cell == Wall)
+      //walls never change:
+      if( hmc.value == NEG_INF) {
+        hmc
+      }
+      else {
+        // Can't see how this would actually happen TODO: remove
+        hmc.copy(value = NEG_INF)
+      }
+    else if (hmc.cell == Rock)
+      hmc.copy(value = (hmc.value :: neighbors.map{n => n.value - 10}).max )
+    else
+      hmc.copy(value = (hmc.value :: neighbors.map{n => n.value - 1}).max )
+  }
+
+  // Where do we update heat to when this node changes?
+  // TODO handle trampolines
+  def heatFlow(hmc : HeatMapCell) : List[HeatMapCell] = {
+    List(Down,Left,Up,Right)
+      .map { hmc.pos.move(_) }
+      .filter{ consider(_) }
+      .map{ heatCellAt(_) }
+  }
+
 }
 
-class HeatMapCell(val cell : Cell, val value : Int, val pos : Position, val targetPos : Position){
+case class HeatMapCell(cell : Cell, value : Int, pos : Position, targetPos : Position){
   import HeatMap.NEG_INF
 
   override lazy val toString : String = {
     if(value <= NEG_INF) " . " else "%3d".format(value)
-  }
-  def update(neighbors : List[HeatMapCell]) : HeatMapCell = {
-    if (cell == Wall)
-      //walls never change:
-      if( value == NEG_INF) {
-        this
-      }
-      else {
-        // Can't see how this would actually happen TODO: remove
-        new HeatMapCell(cell, NEG_INF, pos, targetPos)
-      }
-    else if (cell == Rock)
-      new HeatMapCell(cell, (value :: neighbors.map{n => n.value - 10}).max, pos, targetPos)
-    else
-      new HeatMapCell(cell, (value :: neighbors.map{n => n.value - 1}).max, pos, targetPos)
   }
 }
