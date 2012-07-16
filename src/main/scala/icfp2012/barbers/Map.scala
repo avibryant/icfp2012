@@ -388,18 +388,16 @@ case class TileMap(state : TileState, robotState : RobotState,
       score
   }
 
-  def heatScore(pos : Position) = {/*
-    if(remainingLam.size > 0) {
-      val a = new AStar(state, pos, remainingLam)
-      val sd = a.shortestDistance
-      25 - sd
-    } else {
-      val a = new AStar(state, pos, Set(liftPos))
-      val sd = a.shortestDistance
-      (collectedLam.size * 25) - sd
-    }
-    */
-     heatmap(pos)
+  def heatScore(pos : Position) = {
+    val(prize, goals) = 
+      if(remainingLam.size > 0)
+        (25, remainingLam)
+      else
+        ((collectedLam.size * 25), Set(liftPos))
+
+    val a = new AStar(this, pos, goals)
+    prize - a.shortestDistance
+ //    heatmap(pos)
   }
 
   lazy val heatmapScore = heatScore(robotState.pos)

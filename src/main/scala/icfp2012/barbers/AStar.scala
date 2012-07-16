@@ -2,7 +2,7 @@ package icfp2012.barbers
 
 import scala.collection.mutable.HashMap
 
-class AStar(ts : TileState, start : Position, targets : Set[Position]) {
+class AStar(tm : TileMap, start : Position, targets : Set[Position]) {
   val goal = targets.toList.head
 
   var closedSet = Set[Position]()
@@ -33,7 +33,7 @@ class AStar(ts : TileState, start : Position, targets : Set[Position]) {
 
     openSet -= current
     closedSet += current
-    current.neighbors4.filter(p => ts(p) != Wall && p.x >= 0 && p.y >= 0).foreach {neighbor => 
+    neighbors(current).foreach {neighbor => 
       if(!closedSet.contains(neighbor)) {
 
         val tentativeGScore = gScore(current) + distanceBetween(current, neighbor)
@@ -48,6 +48,14 @@ class AStar(ts : TileState, start : Position, targets : Set[Position]) {
     return None;
   }
 
+  def neighbors(pos : Position) = {
+    val n4 = tm.state(pos) match {
+      case tramp@Trampoline(_) => tm.cellPositions(tm.trampState.targetFor(tramp))
+      case _ => pos.neighbors4
+    }
+    n4.filter(p => tm.state(p) != Wall && p.x >= 0 && p.y >= 0)
+  }
+
   def estimate(pos : Position) : Int = {
     targets.map(estimate(pos, _)).min
   }
@@ -57,7 +65,7 @@ class AStar(ts : TileState, start : Position, targets : Set[Position]) {
   }
 
   def distanceBetween(cell : Position, neighbor : Position) = {
-    (ts(cell), ts(neighbor)) match {
+    val baseDistance = (tm.state(cell), tm.state(neighbor)) match {
       case (_, Wall) => 10000
       case (Wall, _) => 10000
       case (Rock, Rock) => 100
@@ -65,5 +73,9 @@ class AStar(ts : TileState, start : Position, targets : Set[Position]) {
       case (Rock, _) => 5
       case (_, _) => 1
     }
+    if(neighbor.y <= tm.waterState.level)
+      baseDistance + 5
+    else
+      baseDistance
   }
 }
