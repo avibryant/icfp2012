@@ -73,7 +73,6 @@ unless width && height
   exit 1
 end
 
-trampoline_count = rand(width / 5)
 distribution = compute_odds(CELL_TYPES)
 
 map = []
@@ -88,8 +87,9 @@ map << ["#"] * width
 end
 map << ["#"] * width
 
+trampoline_count = rand(width / 5)
+trampoline_count = 26 if trampoline_count > 26
 trampolines = make_trampolines(trampoline_count)
-p trampolines
 
 trampolines.each do |src, dst|
   src_x = rand(width - 1)
