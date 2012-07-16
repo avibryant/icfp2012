@@ -120,8 +120,8 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
     while(System.currentTimeMillis < endTime) {
       val selection = root.select
       val result = selection.simulate
-      //todo - try updating just the selection vs. the simulate result
-      result.update(result.score)
+      //todone - try updating just the selection vs. the simulate result
+      selection.update(result.score)
 
       var candidate = result.tm
       if(candidate.abortScore > solution.score) {
