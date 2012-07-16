@@ -353,7 +353,8 @@ case class TileMap(state : TileState, robotState : RobotState,
               val newBeards = beardPos -- shavedBeards
               val newCellPositions = cellPositions + (Beard -> newBeards)
               val newState = state.updateAll(shavedBeards.toSeq, Empty)
-              copy(state = newState, cellPositions = newCellPositions)
+              copy(state = newState, robotState = newRobotState,
+                cellPositions = newCellPositions, razorCount = razorCount - 1)
             } else {
               invalidNext
             }

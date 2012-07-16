@@ -75,7 +75,12 @@ class RandomMover(args : Array[String]) extends IterativeAlgorithm(args) {
   val moves = Vector(Left,Right,Up,Down)
 
   def next(tm : TileMap) = {
-    val nextTm = tm.move(moves(r.nextInt(4)))
+    val nextMove = if(tm.robotState.beardNeighbors(tm.beardPos).size > 0 && tm.razorCount > 0) {
+      Shave
+    } else {
+      moves(r.nextInt(4))
+    }
+    val nextTm = tm.move(nextMove)
     println(nextTm)
     (nextTm, this)
   }
