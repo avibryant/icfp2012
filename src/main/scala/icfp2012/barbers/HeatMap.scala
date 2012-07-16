@@ -48,10 +48,9 @@ object HeatMap {
     else {
       val changed = requiresUpdate
         .foldLeft(Set[(HeatMapCell, Set[HeatMapCell])]()) { (changed, cell) =>
-          val validNeighbors = hm.heatFlow(cell)
-          val newCell = hm.update(cell, validNeighbors)
+          val newCell = hm.update(cell, hm.heatFlowIn(cell))
           if (cell.value != newCell.value) {
-            changed + ((newCell, validNeighbors.toSet))
+            changed + ((newCell, hm.heatFlowOut(cell).toSet))
           }
           else {
             changed
@@ -100,7 +99,14 @@ class HeatMap(val tileMap: TileMap, val heatState : IndexedSeq[IndexedSeq[HeatMa
 
   // Where do we update heat to when this node changes?
   // TODO handle trampolines
-  def heatFlow(hmc : HeatMapCell) : List[HeatMapCell] = {
+  def heatFlowIn(hmc : HeatMapCell) : List[HeatMapCell] = {
+    List(Down,Left,Up,Right)
+      .map { hmc.pos.move(_) }
+      .filter{ consider(_) }
+      .map{ heatCellAt(_) }
+  }
+
+  def heatFlowOut(hmc : HeatMapCell) : List[HeatMapCell] = {
     List(Down,Left,Up,Right)
       .map { hmc.pos.move(_) }
       .filter{ consider(_) }
