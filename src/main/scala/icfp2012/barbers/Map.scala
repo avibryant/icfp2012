@@ -390,6 +390,8 @@ case class TileMap(state : TileState, robotState : RobotState,
     }
   }
 
+  def bestMove = validMoves(0)
+
   def moveScores = {
     List(Left, Down, Right, Up).map{dir => (dir, move(dir).heatmapScore, move(dir).progressScore)}
   }
