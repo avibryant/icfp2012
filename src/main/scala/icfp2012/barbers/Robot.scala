@@ -42,6 +42,7 @@ case class RobotState(moves : List[Move], history : List[Position]) {
   def invalidMove(mv : Move) = jump(mv, pos)
   def isAborted : Boolean = moves.headOption.map { _ == Abort }.getOrElse(false)
   def beardNeighbors(beards : Set[Position]) = pos.neighbors8.filter{ n => beards.contains(n) }.toSet
+  def moveString : String = moves.reverse.map { Move.charOf(_) }.mkString("")
 }
 
 object Move {

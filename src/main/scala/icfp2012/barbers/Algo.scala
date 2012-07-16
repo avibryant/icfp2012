@@ -32,24 +32,34 @@ object Algorithm {
         .asInstanceOf[Algorithm]
   }
 
+  def isQuiet(args : Array[String]) : Boolean = {
+    args.size >= 2 && args(1) == "--quiet"
+  }
+
   def main(args : Array[String]) {
-    val alg = apply(args(0), args.tail)
+    val quiet = isQuiet(args)
+    val alg = apply(args(0), if (quiet) args.tail.tail else args.tail )
     // pass the sigint to the algorithms
     Signal.handle(new Signal("INT"), new SignalHandler() {
       override def handle(sig : Signal) { alg.interrupt }
     })
-    println("-------------")
-    println("-   INPUT   -")
-    println("-------------")
     val startTm = TileMap.parseStdin
-    println(startTm)
+    if(!quiet) {
+      println("-------------")
+      println("-   INPUT   -")
+      println("-------------")
+      println(startTm)
+    }
     //Actually run here:
     val finalTm = alg(startTm)
-    println("-------------")
-    println("- SOLUTION: -")
-    println("-------------")
-    println(finalTm)
-    println(finalTm.score.toString + "\t" + finalTm.robotState.moves.size)
+    if(!quiet) {
+      println("-------------")
+      println("- SOLUTION: -")
+      println("-------------")
+      println(finalTm)
+      println(finalTm.score.toString + "\t" + finalTm.robotState.moves.size)
+    }
+    println(finalTm.robotState.moveString)
   }
 
 }

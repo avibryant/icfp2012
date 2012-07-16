@@ -136,7 +136,7 @@ case class TileMap(state : TileState, robotState : RobotState,
     "map: \n" + state.toString + "\n" +
     "score: " + score.toString + "\n" +
     "move count: " + robotState.moves.size + "\n" +
-    "moves: " + robotState.moves.reverse.map { Move.charOf(_) }.mkString("") + "\n" +
+    "moves: " + robotState.moveString + "\n" +
     "razors: " + razorCount + "\n" +
   //  "heatmap: \n" + heatmap + "\n" +
     waterState.toString + "\n"
