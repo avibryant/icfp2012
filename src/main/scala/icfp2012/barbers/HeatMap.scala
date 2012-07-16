@@ -99,32 +99,38 @@ class HeatMap(val tileMap: TileMap, val heatState : IndexedSeq[IndexedSeq[HeatMa
     }
   }
 
+  def neighborsOf(c : HeatMapCell) : List[HeatMapCell] = List(Down,Left,Up,Right)
+        .map { c.pos.move(_) }
+        .filter{ consider(_) }
+        .map{ heatCellAt(_) }
+
   // Where do we update heat to when this node changes?
-  // TODO handle trampolines
   def heatFlowIn(hmc : HeatMapCell) : List[HeatMapCell] = {
-     hmc.cell match {
-      case Trampoline(_) => List(Down,Left,Up,Right)
-                              .map { hmc.pos.move(_) }
-                              .filter{ consider(_) }
-                              .map{ heatCellAt(_) }
-      case _ => List(Down,Left,Up,Right)
-                              .map { hmc.pos.move(_) }
-                              .filter{ consider(_) }
-                              .map{ heatCellAt(_) }
+    hmc.cell match {
+      case tramp@Trampoline(_) => {
+        //Heat flows into the trampoline from it's target:
+        val target = tileMap.trampState.targetFor(tramp)
+        val targetPos = tileMap.cellPositions(target).head //This can only have one position
+        val targetHc = heatCellAt(targetPos)
+        neighborsOf(targetHc)
+      }
+      // Heat doesn't flow into these:
+      case Wall => Nil
+      case Target(_) => Nil
+      // TODO aren't there other rules here?
+      case _ => neighborsOf(hmc)
     }
   }
 
   def heatFlowOut(hmc : HeatMapCell) : List[HeatMapCell] = {
-    List(Down,Left,Up,Right)
-      .map { hmc.pos.move(_) }
-      .filter{ consider(_) }
-      .map{ heatCellAt(_) }
-      .flatMap {targetsToTrampolines(_)}
+    hmc.cell match {
+      // Heat doesn't flow into these:
+      case Wall => Nil
+      case Target(_) => Nil
+      // TODO aren't there other rules here?
+      case _ => neighborsOf(hmc)
+    }
   }
-  def targetsToTrampolines(hmc : HeatMapCell) = {
-    List(hmc)
-  }
-
 }
 
 case class HeatMapCell(cell : Cell, value : Int, pos : Position, targetPos : Position){

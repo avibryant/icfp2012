@@ -1,5 +1,7 @@
 package icfp2012.barbers
 
+import scala.collection.immutable.StringOps
+
 case class Position(x : Int, y: Int) extends Ordered[Position] {
   def move(m : Move) : Position = m match {
     case Left => Position(x-1, y)
@@ -59,8 +61,11 @@ object Move {
     'W' -> Wait,
     'A' -> Abort,
     'S' -> Shave)
-
-  def parse(c : Char) : Move = parser(c)
+  // Import Move._ to get these implicits if you are in the REPL
+  implicit def parse(c : Char) : Move = parser(c)
+  implicit def stringToMove(s : String) = parse(s.toUpperCase.charAt(0))
+  implicit def symbolToMove(s : Symbol) = parse(s.name.toUpperCase.charAt(0))
+  implicit def stringToMoveSeq(s : String) : Seq[Move] = (new StringOps(s)).map { parse }
 }
 
 sealed abstract class Move
