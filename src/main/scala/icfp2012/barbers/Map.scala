@@ -18,6 +18,10 @@ class TileState(state : IndexedSeq[IndexedSeq[Cell]]) {
     }
   }
 
+  def apply(c : Cell) : Set[Position] = {
+    positionMap(Set(c))(c).toSet
+  }
+
   def cells = {state}
 
   def contains(p : Position) : Boolean = {
@@ -281,7 +285,7 @@ case class TileMap(state : TileState, robotState : RobotState,
       case Lambda => {
         // Picked up a new Lambda:
         val newRLam = remainingLam - newPos
-        val newState = if(newRLam.size == 0) {
+        val newState = if(newRLam.size == 0 && state(HRock).isEmpty) {
           //Open the lift:
           emptiedTileState.updated(liftPos, OLift)
         }
