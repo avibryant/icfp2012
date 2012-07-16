@@ -56,11 +56,10 @@ def make_trampolines(count)
   graph
 end
 
-class Range
-  def rand_member
-    ary = to_a
-    ary[rand(ary.size)]
-  end
+unless "".respond_to?(:ord)
+class String
+  def ord; self[0]; end
+end
 end
 
 ### SCRIPT CODE ###
