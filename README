@@ -9,5 +9,5 @@ Argyris Zymnis
 
 Description:
 
-Uses Markov chain tree search (MCTS) with a simple shortest path heuristic.
-Written in scala.
+Uses Monte Carlo tree search (MCTS) with A* search as a selection heuristic.
+Written in Scala.
