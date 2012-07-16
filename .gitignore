@@ -1,4 +1,6 @@
 .vagrant
+pkg/*
+barbers.tgz
 maps/*/*.txt
 *.mv
 *.bundle
