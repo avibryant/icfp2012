@@ -108,7 +108,7 @@ object TileMap {
     //Todo: extension-specific parsing of metadataTokens goes here
     val water = WaterState.parse(metadataTokens)
     val tramps = TrampolineState.parse(metadataTokens)
-    val beardGrowth = TextHelper.parseInt(metadataTokens, "Growth", 0)
+    val beardGrowth = TextHelper.parseInt(metadataTokens, "Growth", 25)
     val razorCount = TextHelper.parseInt(metadataTokens, "Razors", 0)
 
     // We have enough to build the tileMap:
