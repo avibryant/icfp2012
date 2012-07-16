@@ -30,6 +30,7 @@ object HeatMap {
       case Empty => NEG_INF
       case Beard => NEG_INF
       case Razor => 10
+      case HRock => NEG_INF
       case Trampoline(c) => NEG_INF //TODO probably should be smarter
       case Target(_) => NEG_INF //Same as a wall
     }

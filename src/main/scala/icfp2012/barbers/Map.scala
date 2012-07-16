@@ -95,7 +95,7 @@ object TileMap {
     // Look for the robot, rocks, lambdas and closed lift:
     val targetSet = Cell.targets.values.toSet
     val trampSet = Cell.trampolines.values.toSet
-    val pmap = ts.positionMap(Set(Robot, Rock, Lambda, CLift, Beard, Razor) ++ targetSet ++ trampSet)
+    val pmap = ts.positionMap(Set(Robot, Rock, Lambda, CLift, Beard, Razor, HRock) ++ targetSet ++ trampSet)
 
     val metadataTokens = linesSeq.drop(metadataIndex+1).map {line =>
       val parts = line.split(" ")
@@ -151,7 +151,7 @@ case class TileMap(state : TileState, robotState : RobotState,
 */
   def move(mv : Move) : TileMap = moveRobot(mv).growBeards.moveRocks
 
-  lazy val rocks : Set[Position] = cellPositions(Rock)
+  lazy val rocks : Set[Position] = cellPositions(Rock) ++ cellPositions.getOrElse(HRock, Set[Position]())
   lazy val remainingLam : Set[Position] = cellPositions(Lambda)
   lazy val liftPos : Position = cellPositions(CLift).head
   lazy val beardPos : Set[Position] = cellPositions.getOrElse(Beard, Set[Position]())
@@ -214,19 +214,30 @@ case class TileMap(state : TileState, robotState : RobotState,
     }
     // Remove the erased:
     val newRocks = writes.foldLeft(rocks) { (r, er) => (r - er._1) + er._2}
+
     // Update the state:
     val newState = writes.foldLeft(state) { (s, er) =>
       state
         .updated(er._1, Empty)
-        .updated(er._2, Rock)
+        .updated(er._2, state(er._1))
     }
     val dangerZone = robotState.pos.move(Up)
     // Make sure none of the new positions are in the dangerZone
     val newBotIsCrushed = writes.forall { _._2 != dangerZone } == false
-    val newCellPositions = cellPositions + (Rock -> newRocks)
+
+    // See if any of the rocks were HRocks, and therefore should become lambdas
+    val newLambdas = writes.filter { write =>
+      val pos = write._2
+      state(pos) == HRock &&
+      state(pos.move(Down)) != Empty
+    }.map(_._2)
+
+    val newNewState = newLambdas.foldLeft(state) { (s, pos) => state.updated(pos, Lambda) }
+
+    val newCellPositions = cellPositions + (Rock -> newRocks) + (HRock -> Set[Position]()) + (Lambda -> (remainingLam ++ newLambdas))
     val newWaterState = waterState.update(robotState)
 
-    copy(state = newState, cellPositions = newCellPositions,
+    copy(state = newNewState, cellPositions = newCellPositions,
       botIsCrushed = newBotIsCrushed, waterState = newWaterState, cachedHeatMap = None) //Option(heatmap))
   }
 
