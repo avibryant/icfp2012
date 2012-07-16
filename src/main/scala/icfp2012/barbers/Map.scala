@@ -155,6 +155,24 @@ case class TileMap(state : TileState, robotState : RobotState,
 */
   def move(mv : Move) : TileMap = moveRobot(mv).growBeards.moveRocks
 
+  // Here we search for all the lambdas within a small box.
+  def nearbyLambdas(boxWidth : Int) : Iterable[Position] = {
+    val pos = robotState.pos
+    val steps = boxWidth / 2
+    (-steps to steps).flatMap { xs =>
+      (-steps to steps).map { ys =>
+        Position(pos.x + xs, pos.y + ys)
+      }
+    }
+    .filter {
+      // Keep the lambdas
+      state(_) match {
+        case Lambda => true
+        case _ => false
+      }
+    }
+  }
+
   lazy val rocks : Set[Position] = cellPositions(Rock) ++ cellPositions.getOrElse(HRock, Set[Position]())
   lazy val remainingLam : Set[Position] = cellPositions(Lambda)
   lazy val liftPos : Position = cellPositions(CLift).head
@@ -424,7 +442,7 @@ case class TileMap(state : TileState, robotState : RobotState,
   //called this for hysterical reasons
   def heatmapScore = closestTarget._2
 
-  lazy val bestMove = 
+  lazy val bestMove =
     List(Left, Down, Right, Up)
       .find(robotState.pos.move(_) == closestTarget._1)
       .getOrElse(Wait)
@@ -447,7 +465,7 @@ case class TileMap(state : TileState, robotState : RobotState,
     if(completed)
       List(Wait)
     else {
-      val out = List(bestMove) ++ 
+      val out = List(bestMove) ++
                   List(Left, Down, Right, Up, Wait).filter(_ != bestMove)
 
       if(razorCount > 0 && beardPos.contains(robotState.pos.move(out.head))) {
