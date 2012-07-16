@@ -1,6 +1,7 @@
 package icfp2012.barbers
 
 import scala.collection.mutable.HashMap
+import scala.annotation.tailrec
 
 class AStar(tm : TileMap, start : Position, targets : Set[Position]) {
   val goals =
@@ -15,19 +16,30 @@ class AStar(tm : TileMap, start : Position, targets : Set[Position]) {
   var gScore = HashMap(start -> 0)
   var fScore = HashMap(start -> estimate(start))
 
-  def shortestDistance : Int = {
+  val cameFrom = HashMap[Position,Position]()
+
+  def closestTarget : Position = {
     var iterations = 0
     while(iterations < 500) {
       if(openSet.size == 0)
-        return 10000;
+        return targets.toList.head;
 
       iterate match {
-        case Some(pos) => return fScore(pos)
+        case Some(pos) => return pos
         case _ => Unit
       }
       iterations += 1
     }
-    fScore(openSet.minBy(fScore))
+    openSet.minBy(fScore)
+  }
+
+  def shortestDistanceTo(pos : Position) = fScore(pos)
+
+  final def pathTo(pos: Position) : List[Position] = {
+    cameFrom.get(pos) match {
+      case Some(p2) => pos :: pathTo(p2)
+      case None => Nil
+    }
   }
 
   def iterate : Option[Position] = {
@@ -43,6 +55,7 @@ class AStar(tm : TileMap, start : Position, targets : Set[Position]) {
         val tentativeGScore = gScore(current) + distanceBetween(current, neighbor)
         if(!openSet.contains(neighbor) || tentativeGScore < gScore(neighbor)) {
           openSet += neighbor
+          cameFrom(neighbor) = current
           gScore(neighbor) = tentativeGScore
           fScore(neighbor) = tentativeGScore + estimate(neighbor)
         }
