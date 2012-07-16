@@ -138,17 +138,17 @@ case class TileMap(state : TileState, robotState : RobotState,
     "move count: " + robotState.moves.size + "\n" +
     "moves: " + robotState.moves.reverse.map { Move.charOf(_) }.mkString("") + "\n" +
     "razors: " + razorCount + "\n" +
-  //  "heatmap: \n" + heatmap + "\n" +
+   "heatmap: \n" + heatmap + "\n" +
     waterState.toString + "\n"
   }
 
   lazy val numberOfMoves = robotState.moves.size
   // TODO: we can possibly do better if we use the previous heatmap
-/*  lazy val heatmap = {
+  lazy val heatmap = {
     val init = cachedHeatMap.getOrElse { HeatMap.init(this) };
     HeatMap.populate(init)
   }
-*/
+
   def move(mv : Move) : TileMap = moveRobot(mv).growBeards.moveRocks
 
   lazy val rocks : Set[Position] = cellPositions(Rock)
@@ -226,8 +226,9 @@ case class TileMap(state : TileState, robotState : RobotState,
     val newCellPositions = cellPositions + (Rock -> newRocks)
     val newWaterState = waterState.update(robotState)
 
+    val cachedHeatMap = if(writes.size == 0) Option(heatmap) else Option.empty
     copy(state = newState, cellPositions = newCellPositions,
-      botIsCrushed = newBotIsCrushed, waterState = newWaterState, cachedHeatMap = None) //Option(heatmap))
+      botIsCrushed = newBotIsCrushed, waterState = newWaterState, cachedHeatMap = cachedHeatMap)
   }
 
   lazy val gameState : GameState = {
@@ -265,7 +266,7 @@ case class TileMap(state : TileState, robotState : RobotState,
 
     newCell match {
       case Empty | Earth => {
-        copy(state = emptiedTileState, robotState = newRobotState, cachedHeatMap = None) //Option(heatmap))
+        copy(state = emptiedTileState, robotState = newRobotState, cachedHeatMap = Option(heatmap))
       }
       case Lambda => {
         // Picked up a new Lambda:
@@ -389,15 +390,15 @@ case class TileMap(state : TileState, robotState : RobotState,
   }
 
   def heatScore(pos : Position) = {
-    val(prize, goals) = 
-      if(remainingLam.size > 0)
-        (25, remainingLam)
-      else
-        ((collectedLam.size * 25), Set(liftPos))
+    // val(prize, goals) = 
+    //   if(remainingLam.size > 0)
+    //     (25, remainingLam)
+    //   else
+    //     ((collectedLam.size * 25), Set(liftPos))
 
-    val a = new AStar(this, pos, goals)
-    prize - a.shortestDistance
- //    heatmap(pos)
+    // val a = new AStar(this, pos, goals)
+    // prize - a.shortestDistance
+    heatmap(pos)
   }
 
   lazy val heatmapScore = heatScore(robotState.pos)
