@@ -13,7 +13,7 @@ object HeatMap {
         cellx =>
         val (cell, x) = cellx
         // TODO: the second position is unused now
-        new HeatMapCell(cell, initHeatOf(map, cell), Position(x,y), Position(x,y))
+        new HeatMapCell(cell, initHeatOf(map, cell), Position(x,y))
       }
     }
     new HeatMap(map, state)
@@ -133,7 +133,7 @@ class HeatMap(val tileMap: TileMap, val heatState : IndexedSeq[IndexedSeq[HeatMa
   }
 }
 
-case class HeatMapCell(cell : Cell, value : Int, pos : Position, targetPos : Position){
+case class HeatMapCell(cell : Cell, value : Int, pos : Position){
   import HeatMap.NEG_INF
 
   override lazy val toString : String = {
