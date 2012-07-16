@@ -138,17 +138,17 @@ case class TileMap(state : TileState, robotState : RobotState,
     "move count: " + robotState.moves.size + "\n" +
     "moves: " + robotState.moves.reverse.map { Move.charOf(_) }.mkString("") + "\n" +
     "razors: " + razorCount + "\n" +
-    "heatmap: \n" + heatmap + "\n" +
+  //  "heatmap: \n" + heatmap + "\n" +
     waterState.toString + "\n"
   }
 
   lazy val numberOfMoves = robotState.moves.size
   // TODO: we can possibly do better if we use the previous heatmap
-  lazy val heatmap = {
+/*  lazy val heatmap = {
     val init = cachedHeatMap.getOrElse { HeatMap.init(this) };
     HeatMap.populate(init)
   }
-
+*/
   def move(mv : Move) : TileMap = moveRobot(mv).growBeards.moveRocks
 
   lazy val rocks : Set[Position] = cellPositions(Rock)
@@ -227,7 +227,7 @@ case class TileMap(state : TileState, robotState : RobotState,
     val newWaterState = waterState.update(robotState)
 
     copy(state = newState, cellPositions = newCellPositions,
-      botIsCrushed = newBotIsCrushed, waterState = newWaterState, cachedHeatMap = Option(heatmap))
+      botIsCrushed = newBotIsCrushed, waterState = newWaterState, cachedHeatMap = None) //Option(heatmap))
   }
 
   lazy val gameState : GameState = {
@@ -265,7 +265,7 @@ case class TileMap(state : TileState, robotState : RobotState,
 
     newCell match {
       case Empty | Earth => {
-        copy(state = emptiedTileState, robotState = newRobotState, cachedHeatMap = Option(heatmap))
+        copy(state = emptiedTileState, robotState = newRobotState, cachedHeatMap = None) //Option(heatmap))
       }
       case Lambda => {
         // Picked up a new Lambda:
