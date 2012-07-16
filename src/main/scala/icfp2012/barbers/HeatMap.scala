@@ -102,10 +102,16 @@ class HeatMap(val tileMap: TileMap, val heatState : IndexedSeq[IndexedSeq[HeatMa
   // Where do we update heat to when this node changes?
   // TODO handle trampolines
   def heatFlowIn(hmc : HeatMapCell) : List[HeatMapCell] = {
-    List(Down,Left,Up,Right)
-      .map { hmc.pos.move(_) }
-      .filter{ consider(_) }
-      .map{ heatCellAt(_) }
+     hmc.cell match {
+      case Trampoline(_) => List(Down,Left,Up,Right)
+                              .map { hmc.pos.move(_) }
+                              .filter{ consider(_) }
+                              .map{ heatCellAt(_) }
+      case _ => List(Down,Left,Up,Right)
+                              .map { hmc.pos.move(_) }
+                              .filter{ consider(_) }
+                              .map{ heatCellAt(_) }
+    }
   }
 
   def heatFlowOut(hmc : HeatMapCell) : List[HeatMapCell] = {
@@ -113,6 +119,10 @@ class HeatMap(val tileMap: TileMap, val heatState : IndexedSeq[IndexedSeq[HeatMa
       .map { hmc.pos.move(_) }
       .filter{ consider(_) }
       .map{ heatCellAt(_) }
+      .flatMap {targetsToTrampolines(_)}
+  }
+  def targetsToTrampolines(hmc : HeatMapCell) = {
+    List(hmc)
   }
 
 }
