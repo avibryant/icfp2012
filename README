@@ -7,8 +7,34 @@ Steven Noble        (Shopify)       @snoble
 Evan Phoenix        (Living Social) @evanphx
 Argyris Zymnis      (Twitter)       @argyris
 
-Description:
+Summary:
 
 Uses Monte Carlo tree search (MCTS) with A* search as a simulation heuristic.
 Simulated-annealing-style decrease in randomization as score improves.
 Written in Scala.
+
+Description:
+
+We use a pretty standard Monte Carlo Tree Search:
+
+- Build a tree, with a node for each game state. The root is the initial state.
+- Each time through:
+  - First, select a leaf. Starting at the root:
+     - If there are new children you can create (valid moves you haven't tried), pick the best move and create a child for that, and use that as your leaf.
+     - Otherwise, look through all your children and pick the highest potential one, then recurse. (See below for what "potential" means)
+  - Then, starting from the game state represented by the leaf, try playing out a game until completion (or you hit some max depth and abort). Use a randomized algorithm to do this.
+  - Walk back up the tree from the leaf to the root, and update each of those nodes with the results of the trial. What we're tracking is the number of tries and the average score.
+  - The number of tries and average score gives us an upper bound on how good we think this node could be. If we haven't tried it much or we've gotten high scores, it has high potential. If we've tried it lots and gotten low scores, it has low potential.
+  - Separately, keep track of the best trial result we've ever seen. At any point, we can give that as our solution.
+
+ Parameters:
+  The better the randomized algorithm you use to play out games from the leaves, the better the results will be. This will have the biggest overall effect, but it's a trade off with speed: the slower this is the fewer trials we get to run. If you use a pure random strategy, the solutions tend to get dominated by "find the first lambda or two and abort". We ended up using A* to nearest lambda/lift + randomization.
+
+  There's a constant, C, that controls how much we explore new children vs. exploiting the ones we already know are decent and can be tweaked.
+
+  There's a max depth that controls how many moves to simulate before aborting. From trial and error, 200 seems to work ok.
+
+  Some refinements:
+  - if we ever find a winning solution, we try compacting it: test omitting any one move and see if it still wins without that move. If it does, recurse. This gets rid of a lot of spurious Wait moves etc.
+  - we vary C based on how close we are to a good solution, so that we exploit more and explore less as that happens (this is like the "temperature" in simulated annealing). We also use that to control how much we randomize the A* search. If we've gone too long (in seconds) without improving on our best solution to date, we swing this back towards random to avoid getting stuck.
+  - we also use C to sometimes decide to pick an existing child even when not all of the valid moves have been tried.
