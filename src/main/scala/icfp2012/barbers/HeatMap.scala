@@ -43,7 +43,7 @@ object HeatMap {
       //initial case:
       populate(hm, hm.heatState.flatten.toSet, 0)
     }
-    else if ((iterations > 20) || (requiresUpdate.size == 0) || hm.robotHasScore)
+    else if ((iterations > 20) || (requiresUpdate.size == 0))
       hm
     else {
       val changed = requiresUpdate
@@ -59,7 +59,7 @@ object HeatMap {
       val newHm = changed.foldLeft(hm) { (oldState, change) => oldState.setCell(change._1) }
       val changedNeighbors = changed.flatMap{ _._2 }.toSet
 
-      populate(newHm, changedNeighbors, iterations + 1)
+      populate(newHm, changedNeighbors, List(if(hm.robotHasScore) 19 else 0, iterations + 1).max)
     }
   }
 }
@@ -121,6 +121,6 @@ case class HeatMapCell(cell : Cell, value : Int, pos : Position, targetPos : Pos
   import HeatMap.NEG_INF
 
   override lazy val toString : String = {
-    if(value <= NEG_INF) " . " else "%3d".format(value)
+    if(value <= NEG_INF) " . " else "%3d".format(staticValue)
   }
 }
