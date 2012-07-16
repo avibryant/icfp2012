@@ -1,2 +1,2 @@
 #!/bin/sh
-exec java -Xms800m -Xmx800m -jar barbers-assembly-0.0.1.jar icfp2012.barbers.MCTS --quiet 500
+exec java -Xms700m -Xmx700m -jar barbers-assembly-0.0.1.jar icfp2012.barbers.MCTS --quiet 5000
