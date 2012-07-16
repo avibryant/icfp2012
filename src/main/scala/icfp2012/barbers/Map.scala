@@ -442,10 +442,15 @@ case class TileMap(state : TileState, robotState : RobotState,
   //called this for hysterical reasons
   def heatmapScore = closestTarget._2
 
-  lazy val bestMove =
-    List(Left, Down, Right, Up)
-      .find(robotState.pos.move(_) == closestTarget._1)
-      .getOrElse(Wait)
+  lazy val bestMove = {
+    if(razorCount > 0 && robotState.pos.neighbors4.filter(beardPos.contains(_)).size > 0)
+      Shave
+    else {
+      List(Left, Down, Right, Up)
+        .find(robotState.pos.move(_) == closestTarget._1)
+        .getOrElse(Wait)
+    }
+  }
 
   def progressScore = {
     if(completed)
@@ -465,14 +470,8 @@ case class TileMap(state : TileState, robotState : RobotState,
     if(completed)
       List(Wait)
     else {
-      val out = List(bestMove) ++
-                  List(Left, Down, Right, Up, Wait).filter(_ != bestMove)
-
-      if(razorCount > 0 && beardPos.contains(robotState.pos.move(out.head))) {
-        List(Shave) ++ out
-      } else {
-        out
-      }
+      List(bestMove) ++ 
+        List(Left, Down, Right, Up, Wait).filter(_ != bestMove)
     }
   }
 
