@@ -1,8 +1,8 @@
 package icfp2012.barbers
 
-import scala.collection.mutable._
+import scala.collection.mutable.HashMap
 
-class AStar(ts : TileState, start : Position, targets : List[Position]) {
+class AStar(ts : TileState, start : Position, targets : Set[Position]) {
   var closedSet = Set[Position]()
   var openSet = Set(start)
 
@@ -12,11 +12,18 @@ class AStar(ts : TileState, start : Position, targets : List[Position]) {
   def shortestDistance(maxIterations : Int) : Int = {
     var iterations = 0
     while(iterations < maxIterations) {
+      if(openSet.size == 0)
+        return 10000;
+//      println("Open set size: " + openSet.size)
+//      println("Closed set size: " + closedSet.size)
+
       iterate match {
         case Some(pos) => return fScore(pos)
         case _ => Unit
       }
+      iterations += 1
     }
+    println("max iterations reached")
     return fScore(openSet.minBy(fScore))
   }
 
@@ -27,7 +34,7 @@ class AStar(ts : TileState, start : Position, targets : List[Position]) {
 
     openSet -= current
     closedSet += current
-    current.neighbors4.foreach {neighbor => 
+    current.neighbors4.filter(ts(_) != Wall).foreach {neighbor => 
       if(!closedSet.contains(neighbor)) {
         val tentativeGScore = gScore(current) + distanceBetween(current, neighbor)
 

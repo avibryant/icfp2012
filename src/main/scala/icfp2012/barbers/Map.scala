@@ -385,7 +385,14 @@ case class TileMap(state : TileState, robotState : RobotState,
       score
   }
 
-  lazy val heatmapScore = heatmap(robotState.pos)
+  def heatScore(pos : Position) = {
+//    val a = new AStar(state, pos, remainingLam)
+//    val sd = a.shortestDistance(10000)
+//    25 - sd
+     heatmap(pos)
+  }
+
+  lazy val heatmapScore = heatScore(robotState.pos)
 
   def progressScore = {
     if(completed)
@@ -405,7 +412,7 @@ case class TileMap(state : TileState, robotState : RobotState,
     if(completed)
       List(Wait)
     else {
-      val out = List(Left, Down, Right, Up).map{dir => (dir, heatmap(robotState.pos.move(dir)))}
+      val out = List(Left, Down, Right, Up).map{dir => (dir, heatScore(robotState.pos.move(dir)))}
         .filter(_._2 > -100)
         .sortBy(_._2)
         .map(_._1)
