@@ -8,7 +8,7 @@ class AStar(tm : TileMap, start : Position, targets : Set[Position]) {
     if(targets.size < 100)
       targets
     else
-      Set(targets.toList.minBy(estimate(start, _)))
+      tm.nearbyLambdas(20).toSet
 
   var closedSet = Set[Position]()
   var openSet = Set(start)
