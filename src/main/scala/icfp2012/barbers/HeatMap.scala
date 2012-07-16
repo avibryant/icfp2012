@@ -43,7 +43,7 @@ object HeatMap {
       //initial case:
       populate(hm, hm.heatState.flatten.toSet, 0)
     }
-    else if ((iterations > 20) || (requiresUpdate.size == 0))
+    else if ((iterations > 20) || (requiresUpdate.size == 0) || hm.robotHasScore)
       hm
     else {
       val changed = requiresUpdate
@@ -75,6 +75,8 @@ class HeatMap(val tileMap: TileMap, val heatState : IndexedSeq[IndexedSeq[HeatMa
     val newState = heatState.updated(hmc.pos.y, newRow)
     new HeatMap(tileMap, newState)
   }
+
+  def robotHasScore = {apply(tileMap.robotState.pos) > NEG_INF}
 
   override def toString : String = {
     heatState.reverse
