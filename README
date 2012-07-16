@@ -1,0 +1,13 @@
+Team members:
+
+Oscar Boykin
+Avi Bryant
+Lennon Day-Reynolds
+Steven Noble
+Evan Phoenix
+Argyris Zymnis
+
+Description:
+
+Uses Markov chain tree search (MCTS) with a simple shortest path heuristic.
+Written in scala.

@@ -106,7 +106,7 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
     }
   }
 
-  override def apply(tm : TileMap) = {
+  override def apply(tm : TileMap, quiet : Boolean = false) = {
     val startTime = System.currentTimeMillis
     val endTime = startTime + (1000 * maxTime)
 
@@ -134,16 +134,17 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
           solution = candidate.move(Abort)
 
         //todo - if compacted, create nodes for and update solution?
-
-        println("New solution:")
-        println(solution)
-        println("Temperature: " + c)
-        println("Progress score: " + candidate.progressScore)
-        println("Move scores: " + candidate.moveScores)
-        println("Elapsed time: " + (System.currentTimeMillis - startTime))
-        println("Time since last improvement: " + (System.currentTimeMillis - solutionTime))
-        println("Tree size: " + nodeCount)
-        println("Moves/sec: " + (moveCount * 1000 / (System.currentTimeMillis - startTime)))
+        if(!quiet) {
+          println("New solution:")
+          println(solution)
+          println("Temperature: " + c)
+          println("Progress score: " + candidate.progressScore)
+          println("Move scores: " + candidate.moveScores)
+          println("Elapsed time: " + (System.currentTimeMillis - startTime))
+          println("Time since last improvement: " + (System.currentTimeMillis - solutionTime))
+          println("Tree size: " + nodeCount)
+          println("Moves/sec: " + (moveCount * 1000 / (System.currentTimeMillis - startTime)))
+        }
 
         solutionTime = System.currentTimeMillis
         // pass the sigint to the algorithms

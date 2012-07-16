@@ -51,7 +51,7 @@ object Algorithm {
       println(startTm)
     }
     //Actually run here:
-    val finalTm = alg(startTm)
+    val finalTm = alg(startTm, quiet)
     if(!quiet) {
       println("-------------")
       println("- SOLUTION: -")
@@ -81,11 +81,11 @@ abstract class Algorithm(args : Array[String]) {
     timeOfSigInt.map { ts => System.currentTimeMillis - ts }
   }
 
-  def apply(tm : TileMap) : TileMap
+  def apply(tm : TileMap, quiet : Boolean = false) : TileMap
 }
 
 abstract class IterativeAlgorithm(args : Array[String]) extends Algorithm(args) {
-  def apply(tm : TileMap) : TileMap = solve(tm)
+  def apply(tm : TileMap, quiet : Boolean = false) : TileMap = solve(tm)
 
   // Take a step, and return a list of next steps and algorithms to run.
   def next(tm : TileMap) : (TileMap, IterativeAlgorithm)
@@ -147,7 +147,7 @@ class Greedy(args : Array[String]) extends Algorithm(args) {
   val topNMaps = args(0).toInt
   val animate = if (args.size > 1) args(1).toBoolean else false
 
-  def apply(tm : TileMap) : TileMap = breadthFirst(Queue(tm))
+  def apply(tm : TileMap, quiet : Boolean = false) : TileMap = breadthFirst(Queue(tm))
 
   def childrenOf(tm : TileMap) : List[TileMap] = {
     if(tm.gameState == Playing) {
