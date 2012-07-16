@@ -70,16 +70,13 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
       best
     }
 
-    def move = createChild(pickMove(tm.validMoves))
+    def move = createChild(pickMove)
 
-    //exponentially prefer earlier items in list
-    def pickMove(moves : List[Move]) = {
-      val n = moves.size
+    def pickMove = {
       if(math.random < (c/3))
-        moves(rand.nextInt(moves.size))
+        tm.validMoves(rand.nextInt(tm.validMoves.size))
       else
-        moves(0)
-//      moves(n - 1 - math.log(rand.nextInt(math.pow(math.E, n).toInt) + 1).toInt)
+        tm.bestMove
     }
 
     def score = tm.progress
@@ -120,8 +117,8 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
     while(System.currentTimeMillis < endTime) {
       val selection = root.select
       val result = selection.simulate
-      //todo - try updating just the selection vs. the simulate result
-      result.update(result.score)
+      //todone - try updating just the selection vs. the simulate result
+      selection.update(result.score)
 
       var candidate = result.tm
       if(candidate.abortScore > solution.score) {
