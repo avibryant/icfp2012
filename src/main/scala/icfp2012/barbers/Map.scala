@@ -389,19 +389,30 @@ case class TileMap(state : TileState, robotState : RobotState,
       score
   }
 
-  def heatScore(pos : Position) = {
+  lazy val closestTarget = {
     val (prize, goals) =
       if(remainingLam.size > 0)
         (25, remainingLam ++ razorPos)
       else
         ((collectedLam.size * 25), Set(liftPos))
 
-    val a = new AStar(this, pos, goals)
-    prize - a.shortestDistance
- //    heatmap(pos)
+    val a = new AStar(this, robotState.pos, goals)
+    val target= a.closestTarget
+    val dist = a.shortestDistanceTo(target)
+    val p = a.pathTo(target).reverse
+    if(p.size > 0)
+      (p.head, prize - dist)
+    else
+      (robotState.pos, 0)
   }
 
-  lazy val heatmapScore = heatScore(robotState.pos)
+  //called this for hysterical reasons
+  def heatmapScore = closestTarget._2
+
+  lazy val bestMove = 
+    List(Left, Down, Right, Up)
+      .find(robotState.pos.move(_) == closestTarget._1)
+      .getOrElse(Wait)
 
   def progressScore = {
     if(completed)
@@ -421,18 +432,7 @@ case class TileMap(state : TileState, robotState : RobotState,
     if(completed)
       List(Wait)
     else {
-      val r = new java.util.Random
-      val out = List(Left, Down, Right, Up)
-        .map {dir => (dir, heatScore(robotState.pos.move(dir)))}
-        .filter(_._2 > -100)
-        // To break a tie, we shuffle the list before sorting
-        .map { x => (x,r.nextDouble) }
-        .sortBy { _._2 } // Random shuffle
-        .map { _._1 } // Keep the original item, discard shuffle value
-        .sortBy(_._2)
-        .map(_._1)
-        .reverse ++
-      List(Wait)
+      val out = List(Left, Down, Right, Up, Wait)
 
       if(razorCount > 0 && beardPos.contains(robotState.pos.move(out.head))) {
         List(Shave) ++ out
@@ -441,8 +441,6 @@ case class TileMap(state : TileState, robotState : RobotState,
       }
     }
   }
-
-  def bestMove = validMoves(0)
 
   lazy val moveScores = {
     List(Left, Down, Right, Up).map{dir => (dir, move(dir).heatmapScore, move(dir).progressScore)}
