@@ -142,7 +142,7 @@ class Animate(args : Array[String]) extends IterativeAlgorithm(args) {
 }
 
 class Greedy(args : Array[String]) extends Algorithm(args) {
-  val moves = List(Left,Right,Up,Down,Abort)
+  val moves = List(Left,Right,Up,Down,Abort,Shave)
 
   val topNMaps = args(0).toInt
   val animate = if (args.size > 1) args(1).toBoolean else false
@@ -163,7 +163,7 @@ class Greedy(args : Array[String]) extends Algorithm(args) {
     top : List[TileMap] = List[TileMap](),
     visited : Set[TileMap] = Set[TileMap]())
     : TileMap = {
-    if (q.isEmpty) {
+    if (q.isEmpty || msSinceInterrupt.isDefined) {
       //We are done, now take the best TileMap:
       top.maxBy { _.score }
     }
