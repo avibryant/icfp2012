@@ -121,6 +121,6 @@ case class HeatMapCell(cell : Cell, value : Int, pos : Position, targetPos : Pos
   import HeatMap.NEG_INF
 
   override lazy val toString : String = {
-    if(value <= NEG_INF) " . " else "%3d".format(staticValue)
+    if(value <= NEG_INF) " . " else "%3d".format(value)
   }
 }
