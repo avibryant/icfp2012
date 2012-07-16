@@ -9,9 +9,13 @@ end
 tests.each do |key, value|
   total_time = value["speed"].inject(:+)
   total_score = value["score"].inject(:+)
+  min_score = value["score"].min
+  max_score = value["score"].max
   average_time = total_time / value["speed"].size
   average_score = total_score / value["score"].size
   puts "#{key} ran #{value["score"].size} time"
   puts "#{key} average_time: #{average_time}"
   puts "#{key} average_score: #{average_score}"
+  puts "#{key} min_score: #{min_score}"
+  puts "#{key} min_score: #{max_score}"
 end
