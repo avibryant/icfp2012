@@ -113,7 +113,7 @@ object TileMap {
 
     // We have enough to build the tileMap:
     new TileMap(ts, RobotState(Nil, List(pmap(Robot).head)),
-      cellPositions, Nil, false, false, water, tramps, beardGrowth, razorCount)
+      cellPositions, Nil, false, false, water, tramps, beardGrowth, razorCount, Option.empty)
   }
 
 }
@@ -130,7 +130,7 @@ case object Aborted extends GameState
 case class TileMap(state : TileState, robotState : RobotState,
   cellPositions: Map[Cell, Set[Position]], collectedLam : List[Position],
   completed : Boolean, botIsCrushed : Boolean, waterState : WaterState,
-  trampState : TrampolineState, beardGrowthRate : Int, razorCount : Int) {
+  trampState : TrampolineState, beardGrowthRate : Int, razorCount : Int, cachedHeatMap : Option[HeatMap]) {
 
   override lazy val toString = {
     "map: \n" + state.toString + "\n" +
@@ -144,7 +144,7 @@ case class TileMap(state : TileState, robotState : RobotState,
 
   lazy val numberOfMoves = robotState.moves.size
   // TODO: we can possibly do better if we use the previous heatmap
-  lazy val heatmap = { val init = HeatMap.init(this); HeatMap.populate(init) }
+  lazy val heatmap = cachedHeatMap.getOrElse { val init = HeatMap.init(this); HeatMap.populate(init) }
 
   def move(mv : Move) : TileMap = moveRobot(mv).growBeards.moveRocks
 
@@ -169,7 +169,7 @@ case class TileMap(state : TileState, robotState : RobotState,
 
     var newState = newBeards.foldLeft(state) { (s, pos) => s.updated(pos, Beard) }
     var newCellPositions = cellPositions + (Beard -> newBeards)
-    copy(state = newState, cellPositions = newCellPositions)
+    copy(state = newState, cellPositions = newCellPositions, cachedHeatMap = Option.empty)
   }
 
   protected def moveRocks : TileMap = {
@@ -262,7 +262,7 @@ case class TileMap(state : TileState, robotState : RobotState,
 
     newCell match {
       case Empty | Earth => {
-        copy(state = emptiedTileState, robotState = newRobotState)
+        copy(state = emptiedTileState, robotState = newRobotState, cachedHeatMap = Option(heatmap))
       }
       case Lambda => {
         // Picked up a new Lambda:
@@ -279,12 +279,12 @@ case class TileMap(state : TileState, robotState : RobotState,
         copy(state = newState,
           robotState = newRobotState,
           collectedLam = newPos :: collectedLam,
-          cellPositions = newCellPositions)
+          cellPositions = newCellPositions, cachedHeatMap = Option.empty)
       }
       case OLift => {
         copy(state = emptiedTileState,
           robotState = newRobotState,
-          completed = true)
+          completed = true, cachedHeatMap = Option.empty)
       }
       case Rock => {
         // We can push rocks left/right
@@ -299,7 +299,7 @@ case class TileMap(state : TileState, robotState : RobotState,
               //Move the rocks
               copy(state = movedTileState,
                 robotState = newRobotState,
-                cellPositions = newCellPositions)
+                cellPositions = newCellPositions, cachedHeatMap = Option.empty)
             }
             case _ => invalidNext
           }
@@ -313,7 +313,7 @@ case class TileMap(state : TileState, robotState : RobotState,
               //Move the rocks
               copy(state = movedTileState,
                 robotState = newRobotState,
-                cellPositions = newCellPositions)
+                cellPositions = newCellPositions, cachedHeatMap = Option.empty)
             }
             case _ => invalidNext
           }
@@ -324,7 +324,7 @@ case class TileMap(state : TileState, robotState : RobotState,
         val newRazors = razorPos - newPos
         val newCellPositions = cellPositions + (Razor -> newRazors)
         val newState = state.updated(newPos, Empty)
-        copy(state = newState, cellPositions = newCellPositions, razorCount = razorCount + 1)
+        copy(state = newState, cellPositions = newCellPositions, razorCount = razorCount + 1, cachedHeatMap = Option.empty)
       }
       case Target(_) => invalidNext //Targets are walls until used
       case tramp@Trampoline(_) => {
@@ -343,7 +343,7 @@ case class TileMap(state : TileState, robotState : RobotState,
         val newCellPositions = (cellPositions - target) -- invalidTramps
         val newRobotState = robotState.jump(mv, jumpPos)
         copy(state = newState, robotState = newRobotState,
-          trampState = newTrampState, cellPositions = newCellPositions)
+          trampState = newTrampState, cellPositions = newCellPositions, cachedHeatMap = Option.empty)
       }
       case Robot => {
         mv match {
@@ -354,7 +354,7 @@ case class TileMap(state : TileState, robotState : RobotState,
               val newCellPositions = cellPositions + (Beard -> newBeards)
               val newState = state.updateAll(shavedBeards.toSeq, Empty)
               copy(state = newState, robotState = newRobotState,
-                cellPositions = newCellPositions, razorCount = razorCount - 1)
+                cellPositions = newCellPositions, razorCount = razorCount - 1, cachedHeatMap = Option.empty)
             } else {
               invalidNext
             }

@@ -59,7 +59,7 @@ object HeatMap {
       val newHm = changed.foldLeft(hm) { (oldState, change) => oldState.setCell(change._1) }
       val changedNeighbors = changed.flatMap{ _._2 }.toSet
 
-      populate(newHm, changedNeighbors, List(if(hm.robotHasScore) 19 else 0, iterations + 1).max)
+      populate(newHm, changedNeighbors, iterations + 1) //List(if(hm.robotHasScore) 19 else 0, iterations + 1).max)
     }
   }
 }
