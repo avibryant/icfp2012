@@ -19,7 +19,7 @@ class TileState(state : IndexedSeq[IndexedSeq[Cell]]) {
   }
 
   def apply(c : Cell) : Set[Position] = {
-    positionMap(Set(c))(c).toSet
+    positionMap(Set(c)).getOrElse(c, Nil).toSet
   }
 
   def cells = {state}
