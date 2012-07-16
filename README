@@ -9,5 +9,6 @@ Argyris Zymnis
 
 Description:
 
-Uses Monte Carlo tree search (MCTS) with A* search as a selection heuristic.
+Uses Monte Carlo tree search (MCTS) with A* search as a simulation heuristic.
+Simulated-annealing-style decrease in randomization as score improves.
 Written in Scala.
