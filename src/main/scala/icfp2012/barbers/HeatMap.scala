@@ -12,8 +12,7 @@ object HeatMap {
       row.zipWithIndex.map {
         cellx =>
         val (cell, x) = cellx
-        // TODO: the second position is unused now
-        new HeatMapCell(cell, initHeatOf(map, cell), Position(x,y), Position(x,y))
+        new HeatMapCell(cell, initHeatOf(map, cell), Position(x,y))
       }
     }
     new HeatMap(map, state)
@@ -38,12 +37,12 @@ object HeatMap {
 
 
   @tailrec
-  def populate(hm : HeatMap, requiresUpdate : Set[HeatMapCell] = null, iterations : Int = 0) : HeatMap = {
+  def populate(hm : HeatMap, requiresUpdate : Iterable[HeatMapCell] = null, iterations : Int = 0) : HeatMap = {
     if(requiresUpdate == null) {
       //initial case:
-      populate(hm, hm.heatState.flatten.toSet, 0)
+      populate(hm, hm.heatState.flatten, 0)
     }
-    else if ((iterations > 20) || (requiresUpdate.size == 0))
+    else if ((iterations > 20) || (requiresUpdate.isEmpty))
       hm
     else {
       val changed = requiresUpdate
@@ -57,7 +56,10 @@ object HeatMap {
           }
       }
       val newHm = changed.foldLeft(hm) { (oldState, change) => oldState.setCell(change._1) }
-      val changedNeighbors = changed.flatMap{ _._2 }.toSet
+      // Unique all the changed items:
+      val changedNeighbors = changed.foldLeft(Set[HeatMapCell]()) { (uniqs, thisC) =>
+        uniqs ++ thisC._2
+      }
 
       populate(newHm, changedNeighbors, List(if(hm.robotHasScore) 17 else 0, iterations + 1).max)
     }
@@ -92,42 +94,46 @@ class HeatMap(val tileMap: TileMap, val heatState : IndexedSeq[IndexedSeq[HeatMa
 
   def update(hmc : HeatMapCell, neighbors : List[HeatMapCell]) : HeatMapCell = {
     hmc.cell match {
-      case Wall => hmc
-      case Target(_) => hmc //These cannot be updated
+      //These cannot be updated (already max or min)
+      case Wall | Lambda | Target(_) | CLift | Beard => hmc
       case Rock => hmc.copy(value = (hmc.value :: neighbors.map{n => n.value - 10}).max )
       case _ => hmc.copy(value = (hmc.value :: neighbors.map{n => n.value - 1}).max )
     }
   }
 
+  def neighborsOf(c : HeatMapCell) : List[HeatMapCell] = List(Down,Left,Up,Right)
+        .map { c.pos.move(_) }
+        .filter{ consider(_) }
+        .map{ heatCellAt(_) }
+
   // Where do we update heat to when this node changes?
-  // TODO handle trampolines
   def heatFlowIn(hmc : HeatMapCell) : List[HeatMapCell] = {
-     hmc.cell match {
-      case Trampoline(_) => List(Down,Left,Up,Right)
-                              .map { hmc.pos.move(_) }
-                              .filter{ consider(_) }
-                              .map{ heatCellAt(_) }
-      case _ => List(Down,Left,Up,Right)
-                              .map { hmc.pos.move(_) }
-                              .filter{ consider(_) }
-                              .map{ heatCellAt(_) }
+    hmc.cell match {
+      case tramp@Trampoline(_) => {
+        //Heat flows into the trampoline from it's target:
+        val target = tileMap.trampState.targetFor(tramp)
+        val targetPos = tileMap.cellPositions(target).head //This can only have one position
+        val targetHc = heatCellAt(targetPos)
+        neighborsOf(targetHc)
+      }
+      // Heat doesn't flow into these because they are infinitely cold
+      case Wall | Target(_) | CLift | Beard => Nil
+      // TODO aren't there other rules here?
+      case _ => neighborsOf(hmc)
     }
   }
 
   def heatFlowOut(hmc : HeatMapCell) : List[HeatMapCell] = {
-    List(Down,Left,Up,Right)
-      .map { hmc.pos.move(_) }
-      .filter{ consider(_) }
-      .map{ heatCellAt(_) }
-      .flatMap {targetsToTrampolines(_)}
+    hmc.cell match {
+      // Heat doesn't flow out of these because they are infinitely cold
+      case Wall | Target(_) | CLift | Beard => Nil
+      // TODO aren't there other rules here?
+      case _ => neighborsOf(hmc)
+    }
   }
-  def targetsToTrampolines(hmc : HeatMapCell) = {
-    List(hmc)
-  }
-
 }
 
-case class HeatMapCell(cell : Cell, value : Int, pos : Position, targetPos : Position){
+case class HeatMapCell(cell : Cell, value : Int, pos : Position){
   import HeatMap.NEG_INF
 
   override lazy val toString : String = {
