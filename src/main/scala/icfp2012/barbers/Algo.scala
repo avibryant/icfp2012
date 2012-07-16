@@ -118,6 +118,16 @@ class RandomMover(args : Array[String]) extends IterativeAlgorithm(args) {
   }
 }
 
+class ValidMover(args : Array[String]) extends IterativeAlgorithm(args) {
+
+  def next(tm : TileMap) = {
+    val nextMove = tm.validMoves(0)
+    val nextTm = tm.move(nextMove)
+    println(nextTm)
+    (nextTm, this)
+  }
+}
+
 class Animate(args : Array[String]) extends IterativeAlgorithm(args) {
 
   def next(tm : TileMap) = {

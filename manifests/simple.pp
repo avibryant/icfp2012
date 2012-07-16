@@ -7,11 +7,7 @@ group { "puppet":
   ensure => "present",
 }
 
-package { "jruby":
-  ensure => "present"
-}
-
-package {"scala":
+package {"openjdk-6-jdk":
   ensure => "present"
 }
 
