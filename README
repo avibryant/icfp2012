@@ -11,7 +11,10 @@ Summary:
 
 Uses Monte Carlo tree search (MCTS) with A* search as a simulation heuristic.
 Simulated-annealing-style decrease in randomization as score improves.
-Written in Scala.
+
+Written in Scala: see src/main/scala .
+
+(The src directory also contains various bits of Ruby prototype and support code.)
 
 Description:
 
