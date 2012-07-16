@@ -3,7 +3,11 @@ package icfp2012.barbers
 import scala.collection.mutable.HashMap
 
 class AStar(tm : TileMap, start : Position, targets : Set[Position]) {
-  val goal = targets.toList.head
+  val goals =
+    if(targets.size < 10)
+      targets
+    else
+      targets.toList.sortBy(estimate(start, _)).take(10).toSet
 
   var closedSet = Set[Position]()
   var openSet = Set(start)
@@ -28,7 +32,7 @@ class AStar(tm : TileMap, start : Position, targets : Set[Position]) {
 
   def iterate : Option[Position] = {
     val current = openSet.minBy(fScore)
-    if(targets.contains(current))
+    if(goals.contains(current))
       return Some(current);
 
     openSet -= current
@@ -57,7 +61,7 @@ class AStar(tm : TileMap, start : Position, targets : Set[Position]) {
   }
 
   def estimate(pos : Position) : Int = {
-    targets.map(estimate(pos, _)).min
+    goals.map(estimate(pos, _)).min
   }
 
   def estimate(from : Position, to : Position) : Int = {

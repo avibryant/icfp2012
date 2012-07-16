@@ -3,6 +3,8 @@ package icfp2012.barbers
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 
+import sun.misc.{Signal, SignalHandler}
+
 /*
  * To run your algorithm:
  * implement a subclass of Algorithm that has a constructor that takes an array of strings
@@ -32,6 +34,10 @@ object Algorithm {
 
   def main(args : Array[String]) {
     val alg = apply(args(0), args.tail)
+    // pass the sigint to the algorithms
+    Signal.handle(new Signal("INT"), new SignalHandler() {
+      override def handle(sig : Signal) { alg.interrupt }
+    })
     println("-------------")
     println("-   INPUT   -")
     println("-------------")
@@ -49,6 +55,22 @@ object Algorithm {
 }
 
 abstract class Algorithm(args : Array[String]) {
+  val lock = new Object
+  var timeOfSigInt : Option[Long] = None
+
+  def interrupt {
+    lock.synchronized {
+      if (timeOfSigInt.isEmpty) {
+        timeOfSigInt = Some(System.currentTimeMillis)
+      }
+    }
+  }
+
+  // How long was it since we got the interrupt
+  def msSinceInterrupt : Option[Long] = lock.synchronized {
+    timeOfSigInt.map { ts => System.currentTimeMillis - ts }
+  }
+
   def apply(tm : TileMap) : TileMap
 }
 

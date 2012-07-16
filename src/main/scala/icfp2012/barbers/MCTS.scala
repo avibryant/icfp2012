@@ -110,11 +110,17 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
     val startTime = System.currentTimeMillis
     val endTime = startTime + (1000 * maxTime)
 
+    def timeToStop : Boolean = {
+      // TODO: this stops as soon as the signal comes, we have 10 more seconds
+      System.currentTimeMillis >= endTime ||
+        msSinceInterrupt.isDefined
+    }
+
     val root = new Node(tm, null)
     solution = tm
     solutionTime = System.currentTimeMillis
 
-    while(System.currentTimeMillis < endTime) {
+    while(!timeToStop) {
       val selection = root.select
       val result = selection.simulate
       //todone - try updating just the selection vs. the simulate result
@@ -140,6 +146,7 @@ class MCTS(args : Array[String]) extends Algorithm(args) {
         println("Moves/sec: " + (moveCount * 1000 / (System.currentTimeMillis - startTime)))
 
         solutionTime = System.currentTimeMillis
+        // pass the sigint to the algorithms
       }
     }
     solution

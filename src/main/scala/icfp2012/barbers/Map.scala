@@ -176,6 +176,7 @@ case class TileMap(state : TileState, robotState : RobotState,
   }
 
   protected def moveRocks : TileMap = {
+
     if (gameState != Playing) {
       return this
     }
