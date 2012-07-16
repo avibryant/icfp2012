@@ -90,19 +90,12 @@ class HeatMap(val tileMap: TileMap, val heatState : IndexedSeq[IndexedSeq[HeatMa
     position.x < heatState(position.y).size
 
   def update(hmc : HeatMapCell, neighbors : List[HeatMapCell]) : HeatMapCell = {
-    if (hmc.cell == Wall)
-      //walls never change:
-      if( hmc.value == NEG_INF) {
-        hmc
-      }
-      else {
-        // Can't see how this would actually happen TODO: remove
-        hmc.copy(value = NEG_INF)
-      }
-    else if (hmc.cell == Rock)
-      hmc.copy(value = (hmc.value :: neighbors.map{n => n.value - 10}).max )
-    else
-      hmc.copy(value = (hmc.value :: neighbors.map{n => n.value - 1}).max )
+    hmc.cell match {
+      case Wall => hmc
+      case Target(_) => hmc //These cannot be updated
+      case Rock => hmc.copy(value = (hmc.value :: neighbors.map{n => n.value - 10}).max )
+      case _ => hmc.copy(value = (hmc.value :: neighbors.map{n => n.value - 1}).max )
+    }
   }
 
   // Where do we update heat to when this node changes?
